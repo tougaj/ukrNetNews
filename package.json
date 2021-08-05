@@ -4,7 +4,8 @@
 	"description": "",
 	"main": "app.js",
 	"scripts": {
-		"load": "node src/loader.js"
+		"load": "node src/loader.js",
+		"loadSingle": "node src/loaderSingle.js"
 	},
 	"author": "",
 	"license": "ISC",

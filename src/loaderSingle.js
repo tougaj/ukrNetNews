@@ -10,7 +10,7 @@ const outputDir = './output';
 const proxy = 'http://192.168.0.1:3128';
 const proxyAgent = new HttpsProxyAgent(proxy);
 
-const getFileName = () => moment().format('YYYYMMDD_HHmmss') + '.json';
+// const getFileName = () => moment().format('YYYYMMDD_HHmmss') + '.json';
 
 const getNews = (tops) => {
 	const news = tops.map(({ Title, Description, DateCreated, NewsCount }) => ({
@@ -29,24 +29,29 @@ const loadUkrNetNews = (route) =>
 	})
 		.then((data) => data.json())
 		.then((json) => {
-			const tops = json.tops;
-
-			const result = {
+			const { tops, Title } = json;
+			console.log(`${Title} (${route}) loaded`);
+			return {
 				route,
-				news: getNews(tops),
+				title: Title,
+				tops: getNews(tops),
 			};
-
-			const sResult = JSON.stringify(result, null, '\t');
-			fs.writeFileSync(`${outputDir}/ukrnet_${route}_${getFileName()}`, sResult);
-			console.log(`${route} loaded`);
-		})
-		.catch((error) => console.error(error));
+		});
+// .catch((error) => console.error(error));
 
 const loadAllNews = async () => {
-	await Promise.all(['main', 'politics', 'economics', 'criminal', 'world'].map(loadUkrNetNews));
+	const news = await Promise.all(
+		['main', 'politics', 'economics', 'criminal', 'world', 'society', 'kyiv'].map(loadUkrNetNews)
+	);
+	const sResult = JSON.stringify(news, null, '\t');
+	fs.writeFileSync(`${outputDir}/ukrnet`, sResult);
 	console.log('\nAll routes loaded');
 };
 
 if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
 
-loadAllNews();
+try {
+	loadAllNews();
+} catch (error) {
+	console.error(error);
+}
