@@ -1,14 +1,16 @@
 {
-  "name": "ukr_net",
-  "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "node-fetch": "^2.2.0"
-  }
+	"name": "ukr_net",
+	"version": "1.0.0",
+	"description": "",
+	"main": "app.js",
+	"scripts": {
+		"load": "node src/loader.js"
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"https-proxy-agent": "^5.0.0",
+		"moment": "^2.29.1",
+		"node-fetch": "^2.6.1"
+	}
 }
