@@ -5,6 +5,8 @@ const fs = require('fs');
 const HttpsProxyAgent = require('https-proxy-agent');
 const moment = require('moment');
 
+const outputDir = './output';
+
 const proxy = 'http://192.168.0.1:3128';
 const proxyAgent = new HttpsProxyAgent(proxy);
 
@@ -36,7 +38,7 @@ const loadUkrNetNews = (route) =>
 			};
 
 			const sResult = JSON.stringify(result, null, '\t');
-			fs.writeFileSync(`output/ukrnet_${route}_${getFileName()}`, sResult);
+			fs.writeFileSync(`${outputDir}/ukrnet_${route}_${getFileName()}`, sResult);
 			console.log(`${route} loaded`);
 		})
 		.catch((error) => console.error(error));
@@ -45,6 +47,8 @@ const loadAllNews = async () => {
 	await Promise.all(['main', 'politics', 'economics', 'criminal', 'world'].map(loadUkrNetNews));
 	console.log('\nAll routes loaded');
 };
+
+if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
 
 loadAllNews();
 
