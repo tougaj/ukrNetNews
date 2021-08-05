@@ -48,7 +48,7 @@ const loadAllNews = async () => {
 		news,
 	};
 	const sResult = JSON.stringify(result, null, '\t');
-	fs.writeFileSync(`${outputDir}/ukrnet`, sResult);
+	fs.writeFileSync(`${outputDir}/ukrnet.json`, sResult);
 	console.log('\nAll routes loaded');
 };
 
