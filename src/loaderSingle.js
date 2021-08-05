@@ -6,14 +6,15 @@ const HttpsProxyAgent = require('https-proxy-agent');
 const moment = require('moment');
 
 const outputDir = './output';
+const MESSAGES_MAX_COUNT = 50;
 
 const proxy = 'http://192.168.0.1:3128';
 const proxyAgent = new HttpsProxyAgent(proxy);
 
 // const getFileName = () => moment().format('YYYYMMDD_HHmmss') + '.json';
 
-const getNews = (tops) => {
-	const news = tops.map(({ Title, Description, DateCreated, NewsCount }) => ({
+const getNews = (tops, maxCount = MESSAGES_MAX_COUNT) => {
+	const news = tops.slice(0, maxCount).map(({ Title, Description, DateCreated, NewsCount }) => ({
 		title: Title,
 		description: Description,
 		created: moment(DateCreated * 1000).toISOString(),
@@ -22,7 +23,6 @@ const getNews = (tops) => {
 	return news;
 };
 
-// 212.42.76.252
 const loadUkrNetNews = (route) =>
 	fetch(`https://www.ukr.net/news/dat/${route}/0/`, {
 		agent: proxyAgent,
@@ -43,7 +43,11 @@ const loadAllNews = async () => {
 	const news = await Promise.all(
 		['main', 'politics', 'economics', 'criminal', 'world', 'society', 'kyiv'].map(loadUkrNetNews)
 	);
-	const sResult = JSON.stringify(news, null, '\t');
+	const result = {
+		created: moment().toISOString(),
+		news,
+	};
+	const sResult = JSON.stringify(result, null, '\t');
 	fs.writeFileSync(`${outputDir}/ukrnet`, sResult);
 	console.log('\nAll routes loaded');
 };
