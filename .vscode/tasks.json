@@ -6,7 +6,7 @@
 		{
 			"label": "load",
 			"type": "shell",
-			"command": "node src/loader.js"
+			"command": "node dst/loader.js"
 		}
 	]
 }

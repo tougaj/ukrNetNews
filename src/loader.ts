@@ -9,6 +9,10 @@ const moment = require('moment');
 
 const outputDir = './output';
 const MESSAGES_MAX_COUNT = 50;
+const MAX_LENGTH = {
+	title: 200,
+	description: 1000,
+};
 
 const proxy = 'http://192.168.0.1:3128';
 const proxyAgent = new HttpsProxyAgent(proxy);
@@ -17,8 +21,8 @@ const proxyAgent = new HttpsProxyAgent(proxy);
 
 const getNews = (tops: IUkrNetNews[], maxCount = MESSAGES_MAX_COUNT) => {
 	const news = tops.slice(0, maxCount).map(({ Title, Description, DateCreated, NewsCount }) => ({
-		title: Title,
-		description: Description,
+		title: Title.substring(0, MAX_LENGTH.title),
+		description: Description.substring(0, MAX_LENGTH.description),
 		created: moment(DateCreated * 1000).toISOString(),
 		count: NewsCount,
 	}));
