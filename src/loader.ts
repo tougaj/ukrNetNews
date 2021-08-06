@@ -1,6 +1,8 @@
 'use strict';
 
-const fetch = require('node-fetch');
+import { IUkrNetNews, IUkrNetResponse } from './interfaces';
+
+const nodeFetch = require('node-fetch');
 const fs = require('fs');
 const HttpsProxyAgent = require('https-proxy-agent');
 const moment = require('moment');
@@ -13,7 +15,7 @@ const proxyAgent = new HttpsProxyAgent(proxy);
 
 // const getFileName = () => moment().format('YYYYMMDD_HHmmss') + '.json';
 
-const getNews = (tops, maxCount = MESSAGES_MAX_COUNT) => {
+const getNews = (tops: IUkrNetNews[], maxCount = MESSAGES_MAX_COUNT) => {
 	const news = tops.slice(0, maxCount).map(({ Title, Description, DateCreated, NewsCount }) => ({
 		title: Title,
 		description: Description,
@@ -23,13 +25,13 @@ const getNews = (tops, maxCount = MESSAGES_MAX_COUNT) => {
 	return news;
 };
 
-const loadUkrNetNews = (route) =>
-	fetch(`https://www.ukr.net/news/dat/${route}/0/`, {
+const loadUkrNetNews = (route: string) =>
+	nodeFetch(`https://www.ukr.net/news/dat/${route}/0/`, {
 		agent: proxyAgent,
 	})
-		.then((data) => data.json())
-		.then((json) => {
-			const { tops, Title } = json;
+		.then((data: Response) => data.json())
+		.then((data: IUkrNetResponse) => {
+			const { tops, Title } = data;
 			console.log(`${Title} (${route}) loaded`);
 			return {
 				route,
