@@ -47,7 +47,7 @@ const loadUkrNetNews = (route: string) =>
 
 const loadAllNews = async () => {
 	const news = await Promise.all(
-		['main', 'politics', 'economics', 'criminal', 'world', 'society', 'kyiv'].map(loadUkrNetNews)
+		['main', 'politics', 'economics', 'covid19', 'criminal', 'society', 'world', 'kyiv'].map(loadUkrNetNews)
 	);
 	const result = {
 		created: moment().toISOString(),

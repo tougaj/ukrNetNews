@@ -46,7 +46,7 @@ const loadUkrNetNews = (route) => nodeFetch(`https://www.ukr.net/news/dat/${rout
 });
 // .catch((error) => console.error(error));
 const loadAllNews = () => __awaiter(void 0, void 0, void 0, function* () {
-    const news = yield Promise.all(['main', 'politics', 'economics', 'criminal', 'world', 'society', 'kyiv'].map(loadUkrNetNews));
+    const news = yield Promise.all(['main', 'politics', 'economics', 'covid19', 'criminal', 'society', 'world', 'kyiv'].map(loadUkrNetNews));
     const result = {
         created: moment().toISOString(),
         news,
