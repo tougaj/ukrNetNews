@@ -1,6 +1,6 @@
 'use strict';
 
-import { IUkrNetNews, IUkrNetResponse } from './interfaces';
+import { INews, ISection, IUkrNetNews, IUkrNetResponse } from './interfaces';
 
 const nodeFetch = require('node-fetch');
 const fs = require('fs');
@@ -16,20 +16,25 @@ const MAX_LENGTH = {
 
 const proxy = 'http://192.168.0.1:3128';
 const proxyAgent = new HttpsProxyAgent(proxy);
+const messages: { [key: number]: INews } = {};
 
 // const getFileName = () => moment().format('YYYYMMDD_HHmmss') + '.json';
 
 const getNews = (tops: IUkrNetNews[], maxCount = MESSAGES_MAX_COUNT) => {
-	const news = tops.slice(0, maxCount).map(({ Title, Description, DateCreated, NewsCount }) => ({
-		title: Title.substring(0, MAX_LENGTH.title),
-		description: Description.substring(0, MAX_LENGTH.description),
-		created: moment(DateCreated * 1000).toISOString(),
-		count: NewsCount,
-	}));
+	const news: number[] = tops.slice(0, maxCount).map(({ Title, Description, DateCreated, NewsCount, NewsId }) => {
+		if (messages[NewsId] === undefined)
+			messages[NewsId] = {
+				title: Title.substring(0, MAX_LENGTH.title),
+				description: Description.substring(0, MAX_LENGTH.description),
+				created: moment(DateCreated * 1000).toISOString(),
+				count: NewsCount,
+			};
+		return NewsId;
+	});
 	return news;
 };
 
-const loadUkrNetNews = (route: string) =>
+const loadUkrNetNews = ({ route, longTitle }: ISection) =>
 	nodeFetch(`https://www.ukr.net/news/dat/${route}/0/`, {
 		agent: proxyAgent,
 	})
@@ -40,18 +45,29 @@ const loadUkrNetNews = (route: string) =>
 			return {
 				route,
 				title: Title,
+				longTitle,
 				tops: getNews(tops),
 			};
 		});
 // .catch((error) => console.error(error));
 
 const loadAllNews = async () => {
-	const news = await Promise.all(
-		['main', 'politics', 'economics', 'covid19', 'criminal', 'society', 'world', 'kyiv'].map(loadUkrNetNews)
-	);
+	const sections: ISection[] = [
+		{ route: 'main', longTitle: 'Головні події України та світу' },
+		{ route: 'politics', longTitle: 'Політичні новини країни' },
+		{ route: 'economics', longTitle: 'Економіка та бізнес' },
+		{ route: 'covid19', longTitle: 'Коронавірус COVID-19' },
+		{ route: 'criminal', longTitle: 'Оперативно про надзвичайні події' },
+		{ route: 'society', longTitle: 'Соціальні та культурні події' },
+		{ route: 'world', longTitle: 'Ситуація в світі' },
+		{ route: 'kyiv', longTitle: 'Події в Києві та області' },
+		{ route: 'crimea', longTitle: 'Події в Криму' },
+	];
+	const news = await Promise.all(sections.map(loadUkrNetNews));
 	const result = {
 		created: moment().toISOString(),
 		news,
+		messages,
 	};
 	const sResult = JSON.stringify(result, null, '\t');
 	fs.writeFileSync(`${outputDir}/ukrnet.json`, sResult);
