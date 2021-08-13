@@ -12,7 +12,8 @@
 	"dependencies": {
 		"https-proxy-agent": "^5.0.0",
 		"moment": "^2.29.1",
-		"node-fetch": "^2.6.1"
+		"node-fetch": "^2.6.1",
+		"yargs": "^15.0.2"
 	},
 	"devDependencies": {
 		"@types/node": "^16.4.13",

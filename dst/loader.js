@@ -13,14 +13,22 @@ const nodeFetch = require('node-fetch');
 const fs = require('fs');
 const HttpsProxyAgent = require('https-proxy-agent');
 const moment = require('moment');
+const argv = require('yargs')
+    .usage('Usage: node ./dist/$0 -p [str]')
+    .string(['p'])
+    .alias('p', 'proxy')
+    .nargs('p', 1)
+    .describe('p', 'Proxy configuration in format http://login:password@address:port/')
+    .help('h')
+    .alias('h', 'help').argv;
 const outputDir = './output';
 const MESSAGES_MAX_COUNT = 50;
 const MAX_LENGTH = {
     title: 200,
     description: 1000,
 };
-const proxy = 'http://192.168.0.1:3128';
-const proxyAgent = new HttpsProxyAgent(proxy);
+const proxyAddress = argv.proxy;
+const proxyAgent = proxyAddress ? new HttpsProxyAgent(proxyAddress) : undefined;
 const messages = {};
 // const getFileName = () => moment().format('YYYYMMDD_HHmmss') + '.json';
 const getNews = (tops, maxCount = MESSAGES_MAX_COUNT) => {
