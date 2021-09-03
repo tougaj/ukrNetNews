@@ -6,7 +6,7 @@
 		{
 			"label": "load",
 			"type": "shell",
-			"command": "node dst/loader.js"
+			"command": "node ./dst/loader.js -p http://192.168.0.1:3128"
 		}
 	]
 }

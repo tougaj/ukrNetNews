@@ -3,6 +3,11 @@ export interface ISection {
 	longTitle: string;
 }
 
+export interface IUkrNetSection extends ISection {
+	title: string;
+	tops: number[];
+}
+
 export interface IUkrNetNews {
 	Title: string;
 	Description: string;

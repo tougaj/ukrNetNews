@@ -32,7 +32,9 @@ const proxyAgent = proxyAddress ? new HttpsProxyAgent(proxyAddress) : undefined;
 const messages = {};
 // const getFileName = () => moment().format('YYYYMMDD_HHmmss') + '.json';
 const getNews = (tops, maxCount = MESSAGES_MAX_COUNT) => {
-    const news = tops.slice(0, maxCount).map(({ Title, Description, DateCreated, NewsCount, NewsId }) => {
+    const news = tops
+        .slice(0, maxCount)
+        .map(({ Title = '', Description = '', DateCreated, NewsCount, NewsId }) => {
         if (messages[NewsId] === undefined)
             messages[NewsId] = {
                 title: Title.substring(0, MAX_LENGTH.title),
@@ -44,21 +46,31 @@ const getNews = (tops, maxCount = MESSAGES_MAX_COUNT) => {
     });
     return news;
 };
-const loadUkrNetNews = ({ route, longTitle }) => nodeFetch(`https://www.ukr.net/news/dat/${route}/0/`, {
-    agent: proxyAgent,
-})
-    .then((data) => data.json())
-    .then((data) => {
-    const { tops, Title } = data;
-    console.log(`${Title} (${route}) loaded`);
-    return {
-        route,
-        title: Title,
-        longTitle,
-        tops: getNews(tops),
-    };
+const loadUkrNetNews = ({ route, longTitle }) => __awaiter(void 0, void 0, void 0, function* () {
+    const url = `https://www.ukr.net/news/dat/${route}/0/`;
+    try {
+        const news = yield nodeFetch(url, {
+            agent: proxyAgent,
+        })
+            .then((data) => data.json())
+            .then((data) => {
+            const { tops, Title } = data;
+            console.log(`${Title} (${route}) loaded`);
+            return {
+                route,
+                title: Title,
+                longTitle,
+                tops: getNews(tops),
+            };
+        });
+        return news;
+    }
+    catch (error) {
+        console.log(`!!! ERROR !!! ${route} not loaded from url: ${url}`);
+        console.log(error);
+        return null;
+    }
 });
-// .catch((error) => console.error(error));
 const loadAllNews = () => __awaiter(void 0, void 0, void 0, function* () {
     const sections = [
         { route: 'main', longTitle: 'Головні події України та світу' },
@@ -74,7 +86,7 @@ const loadAllNews = () => __awaiter(void 0, void 0, void 0, function* () {
     const news = yield Promise.all(sections.map(loadUkrNetNews));
     const result = {
         created: moment().toISOString(),
-        news,
+        news: news.filter((section) => section !== null),
         messages,
     };
     const sResult = JSON.stringify(result, null, '\t');

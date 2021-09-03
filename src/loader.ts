@@ -1,6 +1,6 @@
 'use strict';
 
-import { INews, ISection, IUkrNetNews, IUkrNetResponse } from './interfaces';
+import { INews, ISection, IUkrNetNews, IUkrNetResponse, IUkrNetSection } from './interfaces';
 
 const nodeFetch = require('node-fetch');
 const fs = require('fs');
@@ -30,35 +30,45 @@ const messages: { [key: number]: INews } = {};
 // const getFileName = () => moment().format('YYYYMMDD_HHmmss') + '.json';
 
 const getNews = (tops: IUkrNetNews[], maxCount = MESSAGES_MAX_COUNT) => {
-	const news: number[] = tops.slice(0, maxCount).map(({ Title, Description, DateCreated, NewsCount, NewsId }) => {
-		if (messages[NewsId] === undefined)
-			messages[NewsId] = {
-				title: Title.substring(0, MAX_LENGTH.title),
-				description: Description.substring(0, MAX_LENGTH.description),
-				created: moment(DateCreated * 1000).toISOString(),
-				count: NewsCount,
-			};
-		return NewsId;
-	});
+	const news: number[] = tops
+		.slice(0, maxCount)
+		.map(({ Title = '', Description = '', DateCreated, NewsCount, NewsId }) => {
+			if (messages[NewsId] === undefined)
+				messages[NewsId] = {
+					title: Title.substring(0, MAX_LENGTH.title),
+					description: Description.substring(0, MAX_LENGTH.description),
+					created: moment(DateCreated * 1000).toISOString(),
+					count: NewsCount,
+				};
+			return NewsId;
+		});
 	return news;
 };
 
-const loadUkrNetNews = ({ route, longTitle }: ISection) =>
-	nodeFetch(`https://www.ukr.net/news/dat/${route}/0/`, {
-		agent: proxyAgent,
-	})
-		.then((data: Response) => data.json())
-		.then((data: IUkrNetResponse) => {
-			const { tops, Title } = data;
-			console.log(`${Title} (${route}) loaded`);
-			return {
-				route,
-				title: Title,
-				longTitle,
-				tops: getNews(tops),
-			};
-		});
-// .catch((error) => console.error(error));
+const loadUkrNetNews = async ({ route, longTitle }: ISection) => {
+	const url = `https://www.ukr.net/news/dat/${route}/0/`;
+	try {
+		const news: IUkrNetSection = await nodeFetch(url, {
+			agent: proxyAgent,
+		})
+			.then((data: Response) => data.json())
+			.then((data: IUkrNetResponse) => {
+				const { tops, Title } = data;
+				console.log(`${Title} (${route}) loaded`);
+				return {
+					route,
+					title: Title,
+					longTitle,
+					tops: getNews(tops),
+				} as IUkrNetSection;
+			});
+		return news;
+	} catch (error) {
+		console.log(`!!! ERROR !!! ${route} not loaded from url: ${url}`);
+		console.log(error);
+		return null;
+	}
+};
 
 const loadAllNews = async () => {
 	const sections: ISection[] = [
@@ -75,7 +85,7 @@ const loadAllNews = async () => {
 	const news = await Promise.all(sections.map(loadUkrNetNews));
 	const result = {
 		created: moment().toISOString(),
-		news,
+		news: news.filter((section) => section !== null),
 		messages,
 	};
 	const sResult = JSON.stringify(result, null, '\t');
