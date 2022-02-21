@@ -81,6 +81,8 @@ const loadAllNews = async () => {
 		{ route: 'world', longTitle: 'Ситуація в світі' },
 		{ route: 'kyiv', longTitle: 'Події в Києві та області' },
 		{ route: 'crimea', longTitle: 'Події в Криму' },
+		{ route: 'donetsk', longTitle: 'Події в Донецьку та області' },
+		{ route: 'luhansk', longTitle: 'Події в Луганську та області' },
 	];
 	const news = await Promise.all(sections.map(loadUkrNetNews));
 	const result = {
