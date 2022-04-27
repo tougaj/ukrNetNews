@@ -27,3 +27,5 @@ export interface INews {
 	created: string;
 	count: number;
 }
+
+export type TMessages = { [key: number]: INews };

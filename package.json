@@ -13,10 +13,12 @@
 		"https-proxy-agent": "^5.0.0",
 		"moment": "^2.29.1",
 		"node-fetch": "^2.6.1",
+		"puppeteer": "^13.6.0",
 		"yargs": "^15.0.2"
 	},
 	"devDependencies": {
 		"@types/node": "^16.4.13",
+		"@types/puppeteer": "^5.4.6",
 		"del": "^6.0.0",
 		"gulp": "^4.0.2",
 		"gulp-changed": "^4.0.3",
