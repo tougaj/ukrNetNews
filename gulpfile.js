@@ -33,7 +33,7 @@ const clean = () => del([paths.scripts.dist]);
 
 const compress = () => {
 	return gulp
-		.src(`${paths.scripts.dst}/loader.js`)
+		.src([`${paths.scripts.dst}/loader.js`, `${paths.scripts.dst}/ptLoader.js`])
 		.pipe(plumber())
 		.pipe(uglify())
 		.pipe(gulp.dest(paths.scripts.dist));
