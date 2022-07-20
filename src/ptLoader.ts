@@ -105,7 +105,7 @@ const loadAllNews = async (page: puppeteer.Page) => {
 			console.log(`🔴 Error loading news ${error}`);
 		}
 
-		console.log(`⏰  Next run at ${moment().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
+		console.log(`⏰ Next run at ${moment().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
 		await sleep(TIMEOUT_BETWEEN_SESSIONS);
 	}
 
