@@ -107,7 +107,7 @@ const loadAllNews = (page) => __awaiter(void 0, void 0, void 0, function* () {
         catch (error) {
             console.log(`🔴 Error loading news ${error}`);
         }
-        console.log(`⏰  Next run at ${moment_1.default().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
+        console.log(`⏰ Next run at ${moment_1.default().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
         yield common_1.sleep(TIMEOUT_BETWEEN_SESSIONS);
     }
     yield browser.close();
