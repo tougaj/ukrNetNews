@@ -72,6 +72,7 @@ const loadUkrNetNews = async ({ route, longTitle }: ISection) => {
 
 const loadAllNews = async () => {
 	const sections: ISection[] = [
+		{ route: 'main', longTitle: 'Головні події України та світу' },
 		{ route: 'russianaggression', longTitle: 'Війна РФ проти України' },
 		{ route: 'politics', longTitle: 'Політичні новини країни' },
 		{ route: 'economics', longTitle: 'Економіка та бізнес' },

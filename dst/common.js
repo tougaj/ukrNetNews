@@ -12,6 +12,7 @@ const MAX_LENGTH = {
     description: 1000,
 };
 exports.UKRNET_SECTIONS = [
+    { route: 'main', longTitle: 'Головні події України та світу' },
     { route: 'russianaggression', longTitle: 'Війна РФ проти України' },
     { route: 'politics', longTitle: 'Політичні новини країни' },
     { route: 'economics', longTitle: 'Економіка та бізнес' },

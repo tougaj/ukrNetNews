@@ -73,6 +73,7 @@ const loadUkrNetNews = ({ route, longTitle }) => __awaiter(void 0, void 0, void 
 });
 const loadAllNews = () => __awaiter(void 0, void 0, void 0, function* () {
     const sections = [
+        { route: 'main', longTitle: 'Головні події України та світу' },
         { route: 'russianaggression', longTitle: 'Війна РФ проти України' },
         { route: 'politics', longTitle: 'Політичні новини країни' },
         { route: 'economics', longTitle: 'Економіка та бізнес' },
