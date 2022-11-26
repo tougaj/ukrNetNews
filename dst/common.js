@@ -41,7 +41,7 @@ const getNews = (messages, tops, maxCount = MESSAGES_MAX_COUNT) => {
             messages[NewsId] = {
                 title: Title.substring(0, MAX_LENGTH.title),
                 description: Description.substring(0, MAX_LENGTH.description),
-                created: moment_1.default(DateCreated * 1000).toISOString(),
+                created: (0, moment_1.default)(DateCreated * 1000).toISOString(),
                 count: NewsCount,
             };
         return NewsId;

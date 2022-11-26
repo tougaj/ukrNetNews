@@ -6,7 +6,7 @@
 	"scripts": {
 		"load": "node src/loader.js",
 		"loadSingle": "node src/loaderSingle.js",
-		"run_dev": "node dist/ptLoader.js -p http://192.168.0.1:3128"
+		"dev": "node dist/ptLoader.js -p http://192.168.0.1:3128"
 	},
 	"author": "",
 	"license": "ISC",
