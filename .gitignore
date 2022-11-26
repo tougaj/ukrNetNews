@@ -105,5 +105,4 @@ typings/
 
 # custom
 output
-package-lock.json
 runWork.sh

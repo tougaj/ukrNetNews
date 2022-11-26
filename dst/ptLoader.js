@@ -65,7 +65,7 @@ const loadUkrNetNews = (page, messages, { route, longTitle }) => __awaiter(void 
             route,
             title: Title,
             longTitle,
-            tops: common_1.getNews(messages, tops),
+            tops: (0, common_1.getNews)(messages, tops),
         };
     }
     catch (error) {
@@ -80,13 +80,13 @@ const loadAllNews = (page) => __awaiter(void 0, void 0, void 0, function* () {
         if (index !== 0) {
             const sleepTime = Math.round(100 + Math.random() * 1000);
             // console.log(`Sleeping for ${sleepTime}ms`);
-            yield common_1.sleep(sleepTime);
+            yield (0, common_1.sleep)(sleepTime);
         }
         const { route, longTitle } = common_1.UKRNET_SECTIONS[index];
         news.push(yield loadUkrNetNews(page, messages, { route, longTitle }));
     }
     const result = {
-        created: moment_1.default().toISOString(),
+        created: (0, moment_1.default)().toISOString(),
         news: news.filter((section) => section !== null),
         messages,
     };
@@ -96,19 +96,19 @@ const loadAllNews = (page) => __awaiter(void 0, void 0, void 0, function* () {
 (() => __awaiter(void 0, void 0, void 0, function* () {
     let { browser, page } = yield init();
     while (true) {
-        console.log('\nNews loading start at ' + moment_1.default().format('HH:mm:ss'));
+        console.log('\nNews loading start at ' + (0, moment_1.default)().format('HH:mm:ss'));
         try {
             if (!browser.isConnected()) {
                 ({ browser, page } = yield init());
             }
             yield loadAllNews(page);
-            console.log('🟢 News loaded at ' + moment_1.default().format('HH:mm:ss'));
+            console.log('🟢 News loaded at ' + (0, moment_1.default)().format('HH:mm:ss'));
         }
         catch (error) {
             console.log(`🔴 Error loading news ${error}`);
         }
-        console.log(`⏰ Next run at ${moment_1.default().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
-        yield common_1.sleep(TIMEOUT_BETWEEN_SESSIONS);
+        console.log(`⏰ Next run at ${(0, moment_1.default)().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
+        yield (0, common_1.sleep)(TIMEOUT_BETWEEN_SESSIONS);
     }
     yield browser.close();
 }))();
