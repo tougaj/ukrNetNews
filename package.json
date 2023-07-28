@@ -5,6 +5,7 @@
 	"main": "app.js",
 	"scripts": {
 		"load": "node src/loader.js",
+		"ptLoad": "node dist/ptLoader.js",
 		"loadSingle": "node src/loaderSingle.js",
 		"dev": "node dist/ptLoader.js -p http://192.168.0.1:3128"
 	},
@@ -14,18 +15,18 @@
 		"https-proxy-agent": "^5.0.0",
 		"moment": "^2.29.1",
 		"node-fetch": "^2.6.1",
-		"puppeteer": "^13.6.0",
+		"puppeteer": "^20.9.0",
 		"yargs": "^15.0.2"
 	},
 	"devDependencies": {
 		"@types/node": "^16.4.13",
-		"@types/puppeteer": "^5.4.6",
+		"@types/puppeteer": "^7.0.4",
 		"del": "^6.0.0",
 		"gulp": "^4.0.2",
 		"gulp-changed": "^4.0.3",
 		"gulp-plumber": "^1.2.1",
 		"gulp-typescript": "^6.0.0-alpha.1",
 		"gulp-uglify": "^3.0.2",
-		"typescript": "^4.3.5"
+		"typescript": "^5.1.6"
 	}
 }

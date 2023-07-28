@@ -58,8 +58,10 @@ const loadUkrNetNews = (page, messages, { route, longTitle }) => __awaiter(void 
         // await page.waitForNetworkIdle();
         yield page.waitForSelector('body');
         const element = yield page.$('body pre');
+        if (!element)
+            throw new Error('Can\'t find selector "body pre"');
         const text = yield page.evaluate((node) => node.textContent, element);
-        const { tops, Title } = JSON.parse(text);
+        const { tops, Title } = JSON.parse(text || '');
         console.log(`✅ ${Title} (${route}) loaded`);
         return {
             route,

@@ -7,6 +7,11 @@
 			"label": "load",
 			"type": "shell",
 			"command": "node ./dst/loader.js -p http://192.168.0.1:3128"
+		},
+		{
+			"label": "tsc",
+			"type": "shell",
+			"command": "node_modules/typescript/bin/tsc"
 		}
 	]
 }

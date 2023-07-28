@@ -106,3 +106,4 @@ typings/
 # custom
 output
 runWork.sh
+*.js.map

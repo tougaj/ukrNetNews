@@ -1,6 +1,6 @@
 import fs from 'fs';
 import moment from 'moment';
-import puppeteer from 'puppeteer';
+import puppeteer, { Page } from 'puppeteer';
 import { getNews, OUTPUT_DIR, sleep, UKRNET_SECTIONS } from './common';
 import { ISection, IUkrNetSection, TMessages } from './interfaces';
 
@@ -44,7 +44,7 @@ const init = async () => {
 	return { browser, page };
 };
 
-const loadUkrNetNews = async (page: puppeteer.Page, messages: TMessages, { route, longTitle }: ISection) => {
+const loadUkrNetNews = async (page: Page, messages: TMessages, { route, longTitle }: ISection) => {
 	const url = `https://www.ukr.net/news/dat/${route}/0/`;
 	try {
 		await page.goto(url);
@@ -52,8 +52,10 @@ const loadUkrNetNews = async (page: puppeteer.Page, messages: TMessages, { route
 		await page.waitForSelector('body');
 
 		const element = await page.$('body pre');
+		if (!element) throw new Error('Can\'t find selector "body pre"');
+
 		const text = await page.evaluate((node) => node.textContent, element);
-		const { tops, Title } = JSON.parse(text);
+		const { tops, Title } = JSON.parse(text || '');
 		console.log(`✅ ${Title} (${route}) loaded`);
 
 		return {
@@ -68,7 +70,7 @@ const loadUkrNetNews = async (page: puppeteer.Page, messages: TMessages, { route
 	}
 };
 
-const loadAllNews = async (page: puppeteer.Page) => {
+const loadAllNews = async (page: Page) => {
 	const messages: TMessages = {};
 
 	const news: (IUkrNetSection | null)[] = [];
