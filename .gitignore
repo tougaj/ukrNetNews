@@ -107,3 +107,4 @@ typings/
 output
 runWork.sh
 *.js.map
+loader.local.sh
