@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getNews = exports.sleep = exports.UKRNET_SECTIONS = exports.OUTPUT_DIR = void 0;
+exports.getNews = exports.sleep = exports.UKRNET_SECTIONS = exports.PUPPETEER_TIMEOUT = exports.OUTPUT_DIR = void 0;
 const moment_1 = __importDefault(require("moment"));
 exports.OUTPUT_DIR = './output';
 const MESSAGES_MAX_COUNT = 50;
@@ -11,6 +11,7 @@ const MAX_LENGTH = {
     title: 200,
     description: 1000,
 };
+exports.PUPPETEER_TIMEOUT = 5000; //ms
 exports.UKRNET_SECTIONS = [
     { route: 'main', longTitle: 'Головні події України та світу' },
     { route: 'russianaggression', longTitle: 'Війна РФ проти України' },

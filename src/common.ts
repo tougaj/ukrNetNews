@@ -7,6 +7,7 @@ const MAX_LENGTH = {
 	title: 200,
 	description: 1000,
 };
+export const PUPPETEER_TIMEOUT = 5000; //ms
 export const UKRNET_SECTIONS: ISection[] = [
 	{ route: 'main', longTitle: 'Головні події України та світу' },
 	{ route: 'russianaggression', longTitle: 'Війна РФ проти України' },

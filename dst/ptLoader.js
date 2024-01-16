@@ -56,13 +56,19 @@ const init = () => __awaiter(void 0, void 0, void 0, function* () {
     // const page = await browser.newPage();
     yield page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36');
     yield page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
-    // await page.goto('https://www.ukr.net/');
-    page.goto('https://www.ukr.net/');
     try {
-        yield page.waitForSelector('body', { timeout: 5000 });
+        yield page.goto('https://www.ukr.net/', { timeout: common_1.PUPPETEER_TIMEOUT });
+    }
+    catch (error) {
+        console.log('Goto timeout. Continuing...');
+    }
+    try {
+        yield page.waitForSelector('body', { timeout: common_1.PUPPETEER_TIMEOUT });
         // page.waitForNetworkIdle();
     }
-    catch (error) { }
+    catch (error) {
+        console.log('Wait timeout. Continuing...');
+    }
     return { browser, page };
 });
 const loadUkrNetNews = (page, messages, { route, longTitle }) => __awaiter(void 0, void 0, void 0, function* () {

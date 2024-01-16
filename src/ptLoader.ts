@@ -1,7 +1,7 @@
 import fs from 'fs';
 import moment from 'moment';
 import puppeteer, { Page } from 'puppeteer';
-import { getNews, OUTPUT_DIR, sleep, UKRNET_SECTIONS } from './common';
+import { getNews, OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common';
 import { ISection, IUkrNetSection, TMessages } from './interfaces';
 
 const TIMEOUT_BETWEEN_SESSIONS = (5 * 60 + 0) * 1000;
@@ -54,12 +54,17 @@ const init = async () => {
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
 	);
 	await page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
-	// await page.goto('https://www.ukr.net/');
-	page.goto('https://www.ukr.net/');
 	try {
-		await page.waitForSelector('body', { timeout: 5000 });
+		await page.goto('https://www.ukr.net/', { timeout: PUPPETEER_TIMEOUT });
+	} catch (error) {
+		console.log('Goto timeout. Continuing...');
+	}
+	try {
+		await page.waitForSelector('body', { timeout: PUPPETEER_TIMEOUT });
 		// page.waitForNetworkIdle();
-	} catch (error) {}
+	} catch (error) {
+		console.log('Wait timeout. Continuing...');
+	}
 	return { browser, page };
 };
 
