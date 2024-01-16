@@ -26,7 +26,7 @@ if (!fs_1.default.existsSync(common_1.OUTPUT_DIR))
     fs_1.default.mkdirSync(common_1.OUTPUT_DIR);
 const argv = require('yargs')
     .usage('Usage: node ./dist/$0 [Options]')
-    .string(['p'])
+    .string(['p', 's'])
     .alias('d', 'debug')
     .describe('d', 'Debug mode')
     .alias('i', 'infinity')
@@ -36,6 +36,9 @@ const argv = require('yargs')
     .alias('p', 'proxy')
     .nargs('p', 1)
     .describe('p', 'Proxy configuration in format http://login:password@address:port/')
+    .alias('s', 'sections')
+    .nargs('s', 1)
+    .describe('s', "Sections' names for download separated by a space")
     .help('h')
     .alias('h', 'help').argv;
 const isDebug = argv.debug;
@@ -86,18 +89,18 @@ const loadUkrNetNews = (page, messages, { route, longTitle }) => __awaiter(void 
         return null;
     }
 });
-const loadAllNews = (page) => __awaiter(void 0, void 0, void 0, function* () {
+const loadAllNews = (page, sections) => __awaiter(void 0, void 0, void 0, function* () {
     const messages = {};
     const news = [];
-    for (let index = 0; index < common_1.UKRNET_SECTIONS.length; index++) {
+    for (let index = 0; index < sections.length; index++) {
         if (index !== 0) {
             const sleepTime = Math.round(100 + Math.random() * 1000);
             // console.log(`Sleeping for ${sleepTime}ms`);
             yield (0, common_1.sleep)(sleepTime);
         }
-        const { route, longTitle } = common_1.UKRNET_SECTIONS[index];
+        const { route, longTitle } = sections[index];
         news.push(yield loadUkrNetNews(page, messages, { route, longTitle }));
-        if (isDebug && 3 <= index)
+        if (isDebug && 2 <= index)
             break;
     }
     const result = {
@@ -109,14 +112,17 @@ const loadAllNews = (page) => __awaiter(void 0, void 0, void 0, function* () {
     fs_1.default.writeFileSync(`${common_1.OUTPUT_DIR}/ukrnet.json`, sResult);
 });
 (() => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     let { browser, page } = yield init();
+    const userSections = argv.sections ? new Set((_a = argv.sections) === null || _a === void 0 ? void 0 : _a.split(/\s+/)) : null;
+    const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
     while (true) {
         console.log('\nNews loading start at ' + (0, moment_1.default)().format('HH:mm:ss'));
         try {
             if (!browser.connected) {
                 ({ browser, page } = yield init());
             }
-            yield loadAllNews(page);
+            yield loadAllNews(page, sections);
             console.log('🟢 News loaded at ' + (0, moment_1.default)().format('HH:mm:ss'));
         }
         catch (error) {

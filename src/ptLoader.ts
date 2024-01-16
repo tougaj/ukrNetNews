@@ -15,7 +15,7 @@ if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 
 const argv = require('yargs')
 	.usage('Usage: node ./dist/$0 [Options]')
-	.string(['p'])
+	.string(['p', 's'])
 	.alias('d', 'debug')
 	.describe('d', 'Debug mode')
 	.alias('i', 'infinity')
@@ -25,8 +25,17 @@ const argv = require('yargs')
 	.alias('p', 'proxy')
 	.nargs('p', 1)
 	.describe('p', 'Proxy configuration in format http://login:password@address:port/')
+	.alias('s', 'sections')
+	.nargs('s', 1)
+	.describe('s', "Sections' names for download separated by a space")
 	.help('h')
-	.alias('h', 'help').argv as { proxy: string; headless: boolean; debug: boolean; infinity: boolean };
+	.alias('h', 'help').argv as {
+	proxy?: string;
+	headless?: boolean;
+	debug?: boolean;
+	infinity?: boolean;
+	sections?: string;
+};
 const isDebug = argv.debug;
 
 const init = async () => {
@@ -80,19 +89,19 @@ const loadUkrNetNews = async (page: Page, messages: TMessages, { route, longTitl
 	}
 };
 
-const loadAllNews = async (page: Page) => {
+const loadAllNews = async (page: Page, sections: ISection[]) => {
 	const messages: TMessages = {};
 
 	const news: (IUkrNetSection | null)[] = [];
-	for (let index = 0; index < UKRNET_SECTIONS.length; index++) {
+	for (let index = 0; index < sections.length; index++) {
 		if (index !== 0) {
 			const sleepTime = Math.round(100 + Math.random() * 1000);
 			// console.log(`Sleeping for ${sleepTime}ms`);
 			await sleep(sleepTime);
 		}
-		const { route, longTitle } = UKRNET_SECTIONS[index];
+		const { route, longTitle } = sections[index];
 		news.push(await loadUkrNetNews(page, messages, { route, longTitle }));
-		if (isDebug && 3 <= index) break;
+		if (isDebug && 2 <= index) break;
 	}
 	const result = {
 		created: moment().toISOString(),
@@ -105,6 +114,8 @@ const loadAllNews = async (page: Page) => {
 
 (async () => {
 	let { browser, page } = await init();
+	const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
+	const sections = userSections ? UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : UKRNET_SECTIONS;
 
 	while (true) {
 		console.log('\nNews loading start at ' + moment().format('HH:mm:ss'));
@@ -112,7 +123,7 @@ const loadAllNews = async (page: Page) => {
 			if (!browser.connected) {
 				({ browser, page } = await init());
 			}
-			await loadAllNews(page);
+			await loadAllNews(page, sections);
 			console.log('🟢 News loaded at ' + moment().format('HH:mm:ss'));
 		} catch (error) {
 			console.log(`🔴 Error loading news ${error}`);
