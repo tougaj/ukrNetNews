@@ -27,6 +27,7 @@ if (!fs_1.default.existsSync(common_1.OUTPUT_DIR))
 const argv = require('yargs')
     .usage('Usage: node ./dist/$0 [Options]')
     .string(['p', 's'])
+    .number(['t'])
     .alias('d', 'debug')
     .describe('d', 'Debug mode')
     .alias('i', 'infinity')
@@ -38,10 +39,14 @@ const argv = require('yargs')
     .describe('p', 'Proxy configuration in format http://login:password@address:port/')
     .alias('s', 'sections')
     .nargs('s', 1)
-    .describe('s', "Sections' names for download separated by a space")
+    .describe('s', "Sections' names for download separated by spaces")
+    .alias('t', 'timeout')
+    .nargs('t', 1)
+    .describe('t', 'Main page loading timeout in seconds')
     .help('h')
     .alias('h', 'help').argv;
 const isDebug = argv.debug;
+const MAIN_PAGE_LOADING_TIMEOUT = (argv.timeout || common_1.PUPPETEER_TIMEOUT) * 1000;
 const init = () => __awaiter(void 0, void 0, void 0, function* () {
     const browser = yield puppeteer_1.default.launch({
         headless: argv.headless ? 'new' : false,
@@ -57,13 +62,13 @@ const init = () => __awaiter(void 0, void 0, void 0, function* () {
     yield page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36');
     yield page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
     try {
-        yield page.goto('https://www.ukr.net/', { timeout: common_1.PUPPETEER_TIMEOUT });
+        yield page.goto('https://www.ukr.net/', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
     }
     catch (error) {
         console.log('Goto timeout. Continuing...');
     }
     try {
-        yield page.waitForSelector('body', { timeout: common_1.PUPPETEER_TIMEOUT });
+        yield page.waitForSelector('body', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
         // page.waitForNetworkIdle();
     }
     catch (error) {

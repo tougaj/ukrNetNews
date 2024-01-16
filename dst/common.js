@@ -11,7 +11,7 @@ const MAX_LENGTH = {
     title: 200,
     description: 1000,
 };
-exports.PUPPETEER_TIMEOUT = 5000; //ms
+exports.PUPPETEER_TIMEOUT = 5; //in seconds
 exports.UKRNET_SECTIONS = [
     { route: 'main', longTitle: 'Головні події України та світу' },
     { route: 'russianaggression', longTitle: 'Війна РФ проти України' },

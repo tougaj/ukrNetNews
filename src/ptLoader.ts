@@ -16,6 +16,7 @@ if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 const argv = require('yargs')
 	.usage('Usage: node ./dist/$0 [Options]')
 	.string(['p', 's'])
+	.number(['t'])
 	.alias('d', 'debug')
 	.describe('d', 'Debug mode')
 	.alias('i', 'infinity')
@@ -27,7 +28,10 @@ const argv = require('yargs')
 	.describe('p', 'Proxy configuration in format http://login:password@address:port/')
 	.alias('s', 'sections')
 	.nargs('s', 1)
-	.describe('s', "Sections' names for download separated by a space")
+	.describe('s', "Sections' names for download separated by spaces")
+	.alias('t', 'timeout')
+	.nargs('t', 1)
+	.describe('t', 'Main page loading timeout in seconds')
 	.help('h')
 	.alias('h', 'help').argv as {
 	proxy?: string;
@@ -35,8 +39,10 @@ const argv = require('yargs')
 	debug?: boolean;
 	infinity?: boolean;
 	sections?: string;
+	timeout?: number;
 };
 const isDebug = argv.debug;
+const MAIN_PAGE_LOADING_TIMEOUT = (argv.timeout || PUPPETEER_TIMEOUT) * 1000;
 
 const init = async () => {
 	const browser = await puppeteer.launch({
@@ -55,12 +61,12 @@ const init = async () => {
 	);
 	await page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
 	try {
-		await page.goto('https://www.ukr.net/', { timeout: PUPPETEER_TIMEOUT });
+		await page.goto('https://www.ukr.net/', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
 	} catch (error) {
 		console.log('Goto timeout. Continuing...');
 	}
 	try {
-		await page.waitForSelector('body', { timeout: PUPPETEER_TIMEOUT });
+		await page.waitForSelector('body', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
 		// page.waitForNetworkIdle();
 	} catch (error) {
 		console.log('Wait timeout. Continuing...');
