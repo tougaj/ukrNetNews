@@ -20,7 +20,7 @@ const argv = require('yargs')
 	.alias('d', 'debug')
 	.describe('d', 'Debug mode')
 	.alias('i', 'infinity')
-	.describe('i', 'Infinity iteration')
+	.describe('i', 'Infinity iterations')
 	.alias('l', 'headless')
 	.describe('l', 'Use headless browser')
 	.alias('p', 'proxy')
@@ -69,7 +69,7 @@ const init = async () => {
 		await page.waitForSelector('body', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
 		// page.waitForNetworkIdle();
 	} catch (error) {
-		console.log('Wait timeout. Continuing...');
+		console.log('Wait for selector timeout. Continuing...');
 	}
 	return { browser, page };
 };
@@ -82,7 +82,7 @@ const loadUkrNetNews = async (page: Page, messages: TMessages, { route, longTitl
 		await page.waitForSelector('body');
 
 		const element = await page.$('body pre');
-		if (!element) throw new Error('Can\'t find selector "body pre"');
+		if (!element) throw new Error('Can\'t find the "body pre" selector');
 
 		const text = await page.evaluate((node) => node.textContent, element);
 		const { tops, Title } = JSON.parse(text || '');
@@ -129,13 +129,15 @@ const loadAllNews = async (page: Page, sections: ISection[]) => {
 	const sections = userSections ? UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : UKRNET_SECTIONS;
 
 	while (true) {
-		console.log('\nNews loading start at ' + moment().format('HH:mm:ss'));
+		console.log('\nNews loading started at ' + moment().format('HH:mm:ss'));
+		console.time('🏁 News loaded');
 		try {
 			if (!browser.connected) {
 				({ browser, page } = await init());
 			}
 			await loadAllNews(page, sections);
-			console.log('🟢 News loaded at ' + moment().format('HH:mm:ss'));
+			// console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
+			console.timeEnd('🏁 News loaded');
 		} catch (error) {
 			console.log(`🔴 Error loading news ${error}`);
 		}

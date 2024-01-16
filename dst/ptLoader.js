@@ -31,7 +31,7 @@ const argv = require('yargs')
     .alias('d', 'debug')
     .describe('d', 'Debug mode')
     .alias('i', 'infinity')
-    .describe('i', 'Infinity iteration')
+    .describe('i', 'Infinity iterations')
     .alias('l', 'headless')
     .describe('l', 'Use headless browser')
     .alias('p', 'proxy')
@@ -72,7 +72,7 @@ const init = () => __awaiter(void 0, void 0, void 0, function* () {
         // page.waitForNetworkIdle();
     }
     catch (error) {
-        console.log('Wait timeout. Continuing...');
+        console.log('Wait for selector timeout. Continuing...');
     }
     return { browser, page };
 });
@@ -84,7 +84,7 @@ const loadUkrNetNews = (page, messages, { route, longTitle }) => __awaiter(void 
         yield page.waitForSelector('body');
         const element = yield page.$('body pre');
         if (!element)
-            throw new Error('Can\'t find selector "body pre"');
+            throw new Error('Can\'t find the "body pre" selector');
         const text = yield page.evaluate((node) => node.textContent, element);
         const { tops, Title } = JSON.parse(text || '');
         console.log(`✅ ${Title} (${route}) loaded`);
@@ -128,13 +128,15 @@ const loadAllNews = (page, sections) => __awaiter(void 0, void 0, void 0, functi
     const userSections = argv.sections ? new Set((_a = argv.sections) === null || _a === void 0 ? void 0 : _a.split(/\s+/)) : null;
     const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
     while (true) {
-        console.log('\nNews loading start at ' + (0, moment_1.default)().format('HH:mm:ss'));
+        console.log('\nNews loading started at ' + (0, moment_1.default)().format('HH:mm:ss'));
+        console.time('🏁 News loaded');
         try {
             if (!browser.connected) {
                 ({ browser, page } = yield init());
             }
             yield loadAllNews(page, sections);
-            console.log('🟢 News loaded at ' + (0, moment_1.default)().format('HH:mm:ss'));
+            // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
+            console.timeEnd('🏁 News loaded');
         }
         catch (error) {
             console.log(`🔴 Error loading news ${error}`);
