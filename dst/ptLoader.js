@@ -25,30 +25,41 @@ const browserOptions = {
 if (!fs_1.default.existsSync(common_1.OUTPUT_DIR))
     fs_1.default.mkdirSync(common_1.OUTPUT_DIR);
 const argv = require('yargs')
-    .usage('Usage: node ./dist/$0 -p [str]')
+    .usage('Usage: node ./dist/$0 [Options]')
     .string(['p'])
+    .alias('d', 'debug')
+    .describe('d', 'Debug mode')
+    .alias('i', 'infinity')
+    .describe('i', 'Infinity iteration')
+    .alias('l', 'headless')
+    .describe('l', 'Use headless browser')
     .alias('p', 'proxy')
     .nargs('p', 1)
     .describe('p', 'Proxy configuration in format http://login:password@address:port/')
     .help('h')
     .alias('h', 'help').argv;
-const proxyAddress = argv.proxy || '';
+const isDebug = argv.debug;
 const init = () => __awaiter(void 0, void 0, void 0, function* () {
     const browser = yield puppeteer_1.default.launch({
-        headless: false,
+        headless: argv.headless ? 'new' : false,
         ignoreHTTPSErrors: true,
         args: [
             `--window-size=${browserOptions.width},${browserOptions.height}`,
             // '--proxy-server=http://192.168.0.1:3128',
-            `--proxy-server=${proxyAddress}`,
+            `--proxy-server=${argv.proxy || ''}`,
         ],
     });
     const page = (yield browser.pages())[0];
+    // const page = await browser.newPage();
     yield page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36');
     yield page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
-    yield page.goto('https://www.ukr.net/');
-    yield page.waitForSelector('body');
-    // page.waitForNetworkIdle();
+    // await page.goto('https://www.ukr.net/');
+    page.goto('https://www.ukr.net/');
+    try {
+        yield page.waitForSelector('body', { timeout: 5000 });
+        // page.waitForNetworkIdle();
+    }
+    catch (error) { }
     return { browser, page };
 });
 const loadUkrNetNews = (page, messages, { route, longTitle }) => __awaiter(void 0, void 0, void 0, function* () {
@@ -86,6 +97,8 @@ const loadAllNews = (page) => __awaiter(void 0, void 0, void 0, function* () {
         }
         const { route, longTitle } = common_1.UKRNET_SECTIONS[index];
         news.push(yield loadUkrNetNews(page, messages, { route, longTitle }));
+        if (isDebug && 3 <= index)
+            break;
     }
     const result = {
         created: (0, moment_1.default)().toISOString(),
@@ -100,7 +113,7 @@ const loadAllNews = (page) => __awaiter(void 0, void 0, void 0, function* () {
     while (true) {
         console.log('\nNews loading start at ' + (0, moment_1.default)().format('HH:mm:ss'));
         try {
-            if (!browser.isConnected()) {
+            if (!browser.connected) {
                 ({ browser, page } = yield init());
             }
             yield loadAllNews(page);
@@ -109,6 +122,8 @@ const loadAllNews = (page) => __awaiter(void 0, void 0, void 0, function* () {
         catch (error) {
             console.log(`🔴 Error loading news ${error}`);
         }
+        if (!argv.infinity)
+            break;
         console.log(`⏰ Next run at ${(0, moment_1.default)().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
         yield (0, common_1.sleep)(TIMEOUT_BETWEEN_SESSIONS);
     }

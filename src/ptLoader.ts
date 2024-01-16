@@ -14,33 +14,43 @@ const browserOptions = {
 if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 
 const argv = require('yargs')
-	.usage('Usage: node ./dist/$0 -p [str]')
+	.usage('Usage: node ./dist/$0 [Options]')
 	.string(['p'])
+	.alias('d', 'debug')
+	.describe('d', 'Debug mode')
+	.alias('i', 'infinity')
+	.describe('i', 'Infinity iteration')
+	.alias('l', 'headless')
+	.describe('l', 'Use headless browser')
 	.alias('p', 'proxy')
 	.nargs('p', 1)
 	.describe('p', 'Proxy configuration in format http://login:password@address:port/')
 	.help('h')
-	.alias('h', 'help').argv;
-const proxyAddress = argv.proxy || '';
+	.alias('h', 'help').argv as { proxy: string; headless: boolean; debug: boolean; infinity: boolean };
+const isDebug = argv.debug;
 
 const init = async () => {
 	const browser = await puppeteer.launch({
-		headless: false,
+		headless: argv.headless ? 'new' : false,
 		ignoreHTTPSErrors: true,
 		args: [
 			`--window-size=${browserOptions.width},${browserOptions.height}`,
 			// '--proxy-server=http://192.168.0.1:3128',
-			`--proxy-server=${proxyAddress}`,
+			`--proxy-server=${argv.proxy || ''}`,
 		],
 	});
 	const page = (await browser.pages())[0];
+	// const page = await browser.newPage();
 	await page.setUserAgent(
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
 	);
 	await page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
-	await page.goto('https://www.ukr.net/');
-	await page.waitForSelector('body');
-	// page.waitForNetworkIdle();
+	// await page.goto('https://www.ukr.net/');
+	page.goto('https://www.ukr.net/');
+	try {
+		await page.waitForSelector('body', { timeout: 5000 });
+		// page.waitForNetworkIdle();
+	} catch (error) {}
 	return { browser, page };
 };
 
@@ -82,6 +92,7 @@ const loadAllNews = async (page: Page) => {
 		}
 		const { route, longTitle } = UKRNET_SECTIONS[index];
 		news.push(await loadUkrNetNews(page, messages, { route, longTitle }));
+		if (isDebug && 3 <= index) break;
 	}
 	const result = {
 		created: moment().toISOString(),
@@ -98,7 +109,7 @@ const loadAllNews = async (page: Page) => {
 	while (true) {
 		console.log('\nNews loading start at ' + moment().format('HH:mm:ss'));
 		try {
-			if (!browser.isConnected()) {
+			if (!browser.connected) {
 				({ browser, page } = await init());
 			}
 			await loadAllNews(page);
@@ -106,6 +117,7 @@ const loadAllNews = async (page: Page) => {
 		} catch (error) {
 			console.log(`🔴 Error loading news ${error}`);
 		}
+		if (!argv.infinity) break;
 
 		console.log(`⏰ Next run at ${moment().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
 		await sleep(TIMEOUT_BETWEEN_SESSIONS);

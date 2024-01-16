@@ -7,7 +7,8 @@
 		"load": "node src/loader.js",
 		"ptLoad": "node dist/ptLoader.js",
 		"loadSingle": "node src/loaderSingle.js",
-		"dev": "node dist/ptLoader.js -p http://192.168.0.1:3128"
+		"dev": "node dst/ptLoader.js -d",
+		"devProxy": "node dst/ptLoader.js -p http://192.168.0.1:3128"
 	},
 	"author": "",
 	"license": "ISC",
@@ -15,7 +16,7 @@
 		"https-proxy-agent": "^5.0.0",
 		"moment": "^2.29.1",
 		"node-fetch": "^2.6.1",
-		"puppeteer": "^20.9.0",
+		"puppeteer": "^21.7.0",
 		"yargs": "^15.0.2"
 	},
 	"devDependencies": {
