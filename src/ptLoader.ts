@@ -78,8 +78,8 @@ const loadUkrNetNews = async (page: Page, messages: TMessages, { route, longTitl
 	const url = `https://www.ukr.net/news/dat/${route}/0/`;
 	try {
 		await page.goto(url);
-		await page.waitForNetworkIdle();
-		// await page.waitForSelector('body');
+		// await page.waitForNetworkIdle();
+		await page.waitForSelector('body');
 
 		const element = await page.$('body pre');
 		if (!element) throw new Error('Can\'t find the "body pre" selector');

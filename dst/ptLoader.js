@@ -80,8 +80,8 @@ const loadUkrNetNews = (page, messages, { route, longTitle }) => __awaiter(void 
     const url = `https://www.ukr.net/news/dat/${route}/0/`;
     try {
         yield page.goto(url);
-        yield page.waitForNetworkIdle();
-        // await page.waitForSelector('body');
+        // await page.waitForNetworkIdle();
+        yield page.waitForSelector('body');
         const element = yield page.$('body pre');
         if (!element)
             throw new Error('Can\'t find the "body pre" selector');
