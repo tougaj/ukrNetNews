@@ -34,6 +34,8 @@ const argv = require('yargs')
     .describe('i', 'Infinity iterations')
     .alias('l', 'headless')
     .describe('l', 'Use headless browser')
+    .alias('b', 'no-sandbox')
+    .describe('b', "Don't use Chrome sandbox")
     .alias('p', 'proxy')
     .nargs('p', 1)
     .describe('p', 'Proxy configuration in format http://login:password@address:port/')
@@ -49,12 +51,14 @@ const isDebug = argv.debug;
 const MAIN_PAGE_LOADING_TIMEOUT = (argv.timeout || common_1.PUPPETEER_TIMEOUT) * 1000;
 const init = () => __awaiter(void 0, void 0, void 0, function* () {
     const browser = yield puppeteer_1.default.launch({
-        headless: argv.headless ? 'new' : false,
-        ignoreHTTPSErrors: true,
+        headless: argv.headless ? true : false,
+        // ignoreHTTPSErrors: true,
         args: [
             `--window-size=${browserOptions.width},${browserOptions.height}`,
             // '--proxy-server=http://192.168.0.1:3128',
             `--proxy-server=${argv.proxy || ''}`,
+            argv.noSandbox ? '--no-sandbox' : '',
+            // '--disable-setuid-sandbox',
         ],
     });
     const page = (yield browser.pages())[0];

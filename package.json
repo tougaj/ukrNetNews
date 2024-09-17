@@ -5,7 +5,7 @@
 	"main": "app.js",
 	"scripts": {
 		"load": "node src/loader.js",
-		"ptLoad": "node dist/ptLoader.js",
+		"ptLoad": "node dst/ptLoader.js",
 		"loadSingle": "node src/loaderSingle.js",
 		"dev": "node dst/ptLoader.js -d",
 		"devProxy": "node dst/ptLoader.js -p http://192.168.0.1:3128"
@@ -16,7 +16,7 @@
 		"https-proxy-agent": "^5.0.0",
 		"moment": "^2.29.1",
 		"node-fetch": "^2.6.1",
-		"puppeteer": "^21.7.0",
+		"puppeteer": "^23.3.1",
 		"yargs": "^15.0.2"
 	},
 	"devDependencies": {
