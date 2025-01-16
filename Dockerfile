@@ -42,8 +42,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Передаємо значення ARG у ENV
 ENV SECTIONS=""
+ENV TIMEOUT=300
 
 # Команда запуску контейнера
-CMD ["bash", "-c", "while true; do node ptLoader.js -lb -s \"$SECTIONS\"; sleep 300; done"]
-# CMD ["bash", "-c", "while true; do node ptLoader.js -lb -s \"main politics\"; sleep 300; done"]
-# CMD ["bash", "-c", "node ptLoader.js $SECTIONS"]
+CMD ["bash", "-c", "while true; do node ptLoader.js -lb -s \"$SECTIONS\"; sleep $TIMEOUT; done"]
