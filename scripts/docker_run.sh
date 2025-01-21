@@ -21,14 +21,14 @@ docker run \
 # 	--name ukrnet_loader \
 # 	-v $(pwd)/output/:/app/output:z \
 # 	--restart unless-stopped \
-#   --log-driver=none \
+#   --log-driver none \
 # 	ukrnet_loader
 
 #	-e TIMEOUT=900 \
 # 	-e SECTIONS="main russianaggression politics economics criminal society world kyiv dnipro donetsk zaporizhzhya luhansk mikolayiv odesa kharkiv kherson crimea" \
 
 # Якщо не потрібно логування, то можна використати:
-#   --log-driver=none \
+#   --log-driver none \
 
 # Якщо Вам потрібно, щоб цей контейнер автоматично запускався завжди,
 # додайте до команди запуску "--restart always", або  "--restart unless-stopped"
