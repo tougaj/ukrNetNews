@@ -31,3 +31,6 @@ docker info | grep -i 'logging driver'
 ```bash
 docker inspect <container_name_or_id> | less # Тут треба шукати параметр LogConfig
 ```
+
+Щоб логи взагалі не писались, можна додати в `docker run` параметр `--log-driver=none`
+
