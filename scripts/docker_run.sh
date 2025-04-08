@@ -13,7 +13,14 @@ docker run \
 	-v $(pwd)/output/:/app/output:z \
 	-e SECTIONS="main russianaggression politics" \
 	-e TIMEOUT=10 \
+	--network=host \
 	ukrnet_loader
+
+
+# 🧠 Що робить --network=host у docker run:
+# - Контейнер використовує мережу хоста напряму, тобто:
+# 	- DNS-запити йдуть через системні налаштування хоста.
+# 	- Порти контейнера не ізольовані, а доступні напряму на хості (важливо для безпеки!).
 
 # Запуск для роботи
 
