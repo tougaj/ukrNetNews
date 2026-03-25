@@ -1,7 +1,7 @@
 import fs from 'fs';
 import moment from 'moment';
 import puppeteer, { Page } from 'puppeteer';
-import { getNews, OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common';
+import { OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common';
 import { ISection, IUkrNetSection, TMessages } from './interfaces';
 
 const TIMEOUT_BETWEEN_SESSIONS = (5 * 60 + 0) * 1000;
@@ -62,11 +62,12 @@ const init = async () => {
 	const page = (await browser.pages())[0];
 	// const page = await browser.newPage();
 	await page.setUserAgent(
-		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
+		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36',
 	);
 	await page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
 	try {
 		await page.goto('https://www.ukr.net/', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
+		// await page.goto('https://www.ukr.net/', { waitUntil: 'networkidle2' });
 	} catch (error) {
 		console.log('Goto timeout. Continuing...');
 	}
@@ -80,27 +81,83 @@ const init = async () => {
 };
 
 const loadUkrNetNews = async (page: Page, messages: TMessages, { route, longTitle }: ISection) => {
-	const url = `https://www.ukr.net/news/dat/${route}/0/`;
+	const url = `https://www.ukr.net/news/${route}.html`;
 	try {
-		await page.goto(url);
+		try {
+			await page.goto(url, { waitUntil: 'networkidle2', timeout: MAIN_PAGE_LOADING_TIMEOUT });
+		} catch (error) {
+			console.log('Wait for selector timeout. Continuing...');
+		}
 		// await page.waitForNetworkIdle();
-		await page.waitForSelector('body');
+		// await page.waitForSelector('body');
 
-		const element = await page.$('body pre');
-		if (!element) throw new Error('Can\'t find the "body pre" selector');
+		// const element = await page.$('body pre');
+		// if (!element) throw new Error('Can\'t find the "body pre" selector');
 
-		const text = await page.evaluate((node) => node.textContent, element);
-		const { tops, Title } = JSON.parse(text || '');
-		console.log(`✅ ${Title} (${route}) loaded`);
+		// const text = await page.evaluate((node) => node.textContent, element);
+		// const { tops, Title } = JSON.parse(text || '');
+		// const data = await page.evaluate((route) => {
+		// 	// return fetch('/api/3/section/clusters/list', {
+		// 	return fetch('https://www.ukr.net/api/3/section/clusters/list', {
+		// 		method: 'POST',
+		// 		headers: {
+		// 			'Content-Type': 'application/json',
+		// 			'X-Requested-With': 'XMLHttpRequest',
+		// 		},
+		// 		body: JSON.stringify({
+		// 			section_slug: route,
+		// 		}),
+		// 	}).then((res) => res.json());
+		// }, route);
+		const result = await page.evaluate((route) => {
+			return fetch('https://www.ukr.net/api/3/section/clusters/list', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Requested-With': 'XMLHttpRequest',
+				},
+				body: JSON.stringify({
+					section_slug: route,
+				}),
+			}).then(async (res) => ({
+				status: res.status,
+				text: await res.text(),
+			}));
+		}, route);
 
+		console.log(result);
+		// const data = await page.evaluate(async (route as any) => {
+		// 	const res = await fetch('/api/3/section/clusters/list', {
+		// 		method: 'POST',
+		// 		headers: {
+		// 			'Content-Type': 'application/json',
+		// 			'X-Requested-With': 'XMLHttpRequest',
+		// 		},
+		// 		body: JSON.stringify({
+		// 			section_slug: route,
+		// 		}),
+		// 	});
+
+		// 	return res.json();
+		// });
+
+		// console.log(`✅ ${Title} (${route}) loaded`);
+
+		// return {
+		// 	route,
+		// 	title: Title,
+		// 	longTitle,
+		// 	tops: getNews(messages, tops),
+		// } as IUkrNetSection;
 		return {
 			route,
-			title: Title,
+			title: '',
 			longTitle,
-			tops: getNews(messages, tops),
+			tops: [],
 		} as IUkrNetSection;
 	} catch (error) {
-		console.log(`❌ !!! ERROR !!! ${route} not loaded from url: ${url} with error: ${error}`);
+		// console.log(`❌ !!! ERROR !!! ${route} not loaded from url: ${url} with error: ${error}`);
+		console.log(`❌ !!! ERROR !!! ${route} not loaded with error: ${error}`);
 		return null;
 	}
 };

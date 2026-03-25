@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -49,8 +40,8 @@ const argv = require('yargs')
     .alias('h', 'help').argv;
 const isDebug = argv.debug;
 const MAIN_PAGE_LOADING_TIMEOUT = (argv.timeout || common_1.PUPPETEER_TIMEOUT) * 1000;
-const init = () => __awaiter(void 0, void 0, void 0, function* () {
-    const browser = yield puppeteer_1.default.launch({
+const init = async () => {
+    const browser = await puppeteer_1.default.launch({
         headless: argv.headless ? true : false,
         // ignoreHTTPSErrors: true,
         args: [
@@ -61,60 +52,114 @@ const init = () => __awaiter(void 0, void 0, void 0, function* () {
             // '--disable-setuid-sandbox',
         ],
     });
-    const page = (yield browser.pages())[0];
+    const page = (await browser.pages())[0];
     // const page = await browser.newPage();
-    yield page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36');
-    yield page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36');
+    await page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
     try {
-        yield page.goto('https://www.ukr.net/', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
+        await page.goto('https://www.ukr.net/', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
+        // await page.goto('https://www.ukr.net/', { waitUntil: 'networkidle2' });
     }
     catch (error) {
         console.log('Goto timeout. Continuing...');
     }
     try {
-        yield page.waitForSelector('body', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
+        await page.waitForSelector('body', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
         // page.waitForNetworkIdle();
     }
     catch (error) {
         console.log('Wait for selector timeout. Continuing...');
     }
     return { browser, page };
-});
-const loadUkrNetNews = (page, messages, { route, longTitle }) => __awaiter(void 0, void 0, void 0, function* () {
-    const url = `https://www.ukr.net/news/dat/${route}/0/`;
+};
+const loadUkrNetNews = async (page, messages, { route, longTitle }) => {
+    const url = `https://www.ukr.net/news/${route}.html`;
     try {
-        yield page.goto(url);
+        try {
+            await page.goto(url, { waitUntil: 'networkidle2', timeout: MAIN_PAGE_LOADING_TIMEOUT });
+        }
+        catch (error) {
+            console.log('Wait for selector timeout. Continuing...');
+        }
         // await page.waitForNetworkIdle();
-        yield page.waitForSelector('body');
-        const element = yield page.$('body pre');
-        if (!element)
-            throw new Error('Can\'t find the "body pre" selector');
-        const text = yield page.evaluate((node) => node.textContent, element);
-        const { tops, Title } = JSON.parse(text || '');
-        console.log(`✅ ${Title} (${route}) loaded`);
+        // await page.waitForSelector('body');
+        // const element = await page.$('body pre');
+        // if (!element) throw new Error('Can\'t find the "body pre" selector');
+        // const text = await page.evaluate((node) => node.textContent, element);
+        // const { tops, Title } = JSON.parse(text || '');
+        // const data = await page.evaluate((route) => {
+        // 	// return fetch('/api/3/section/clusters/list', {
+        // 	return fetch('https://www.ukr.net/api/3/section/clusters/list', {
+        // 		method: 'POST',
+        // 		headers: {
+        // 			'Content-Type': 'application/json',
+        // 			'X-Requested-With': 'XMLHttpRequest',
+        // 		},
+        // 		body: JSON.stringify({
+        // 			section_slug: route,
+        // 		}),
+        // 	}).then((res) => res.json());
+        // }, route);
+        const result = await page.evaluate((route) => {
+            return fetch('https://www.ukr.net/api/3/section/clusters/list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    section_slug: route,
+                }),
+            }).then(async (res) => ({
+                status: res.status,
+                text: await res.text(),
+            }));
+        }, route);
+        console.log(result);
+        // const data = await page.evaluate(async (route as any) => {
+        // 	const res = await fetch('/api/3/section/clusters/list', {
+        // 		method: 'POST',
+        // 		headers: {
+        // 			'Content-Type': 'application/json',
+        // 			'X-Requested-With': 'XMLHttpRequest',
+        // 		},
+        // 		body: JSON.stringify({
+        // 			section_slug: route,
+        // 		}),
+        // 	});
+        // 	return res.json();
+        // });
+        // console.log(`✅ ${Title} (${route}) loaded`);
+        // return {
+        // 	route,
+        // 	title: Title,
+        // 	longTitle,
+        // 	tops: getNews(messages, tops),
+        // } as IUkrNetSection;
         return {
             route,
-            title: Title,
+            title: '',
             longTitle,
-            tops: (0, common_1.getNews)(messages, tops),
+            tops: [],
         };
     }
     catch (error) {
-        console.log(`❌ !!! ERROR !!! ${route} not loaded from url: ${url} with error: ${error}`);
+        // console.log(`❌ !!! ERROR !!! ${route} not loaded from url: ${url} with error: ${error}`);
+        console.log(`❌ !!! ERROR !!! ${route} not loaded with error: ${error}`);
         return null;
     }
-});
-const loadAllNews = (page, sections) => __awaiter(void 0, void 0, void 0, function* () {
+};
+const loadAllNews = async (page, sections) => {
     const messages = {};
     const news = [];
     for (let index = 0; index < sections.length; index++) {
         if (index !== 0) {
             const sleepTime = Math.round(100 + Math.random() * 1000);
             // console.log(`Sleeping for ${sleepTime}ms`);
-            yield (0, common_1.sleep)(sleepTime);
+            await (0, common_1.sleep)(sleepTime);
         }
         const { route, longTitle } = sections[index];
-        news.push(yield loadUkrNetNews(page, messages, { route, longTitle }));
+        news.push(await loadUkrNetNews(page, messages, { route, longTitle }));
         if (isDebug && 2 <= index)
             break;
     }
@@ -125,10 +170,10 @@ const loadAllNews = (page, sections) => __awaiter(void 0, void 0, void 0, functi
     };
     const sResult = JSON.stringify(result, null, '\t');
     fs_1.default.writeFileSync(`${common_1.OUTPUT_DIR}/ukrnet.json`, sResult);
-});
-(() => __awaiter(void 0, void 0, void 0, function* () {
+};
+(async () => {
     var _a;
-    let { browser, page } = yield init();
+    let { browser, page } = await init();
     const userSections = argv.sections ? new Set((_a = argv.sections) === null || _a === void 0 ? void 0 : _a.split(/\s+/)) : null;
     const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
     while (true) {
@@ -136,9 +181,9 @@ const loadAllNews = (page, sections) => __awaiter(void 0, void 0, void 0, functi
         console.time('🏁 News loaded');
         try {
             if (!browser.connected) {
-                ({ browser, page } = yield init());
+                ({ browser, page } = await init());
             }
-            yield loadAllNews(page, sections);
+            await loadAllNews(page, sections);
             // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
             console.timeEnd('🏁 News loaded');
         }
@@ -148,7 +193,8 @@ const loadAllNews = (page, sections) => __awaiter(void 0, void 0, void 0, functi
         if (!argv.infinity)
             break;
         console.log(`⏰ Next run at ${(0, moment_1.default)().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
-        yield (0, common_1.sleep)(TIMEOUT_BETWEEN_SESSIONS);
+        await (0, common_1.sleep)(TIMEOUT_BETWEEN_SESSIONS);
     }
-    yield browser.close();
-}))();
+    await browser.close();
+})();
+//# sourceMappingURL=ptLoader.js.map

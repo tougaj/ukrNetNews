@@ -1,13 +1,4 @@
 'use strict';
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const nodeFetch = require('node-fetch');
 const fs = require('fs');
@@ -46,10 +37,10 @@ const getNews = (tops, maxCount = MESSAGES_MAX_COUNT) => {
     });
     return news;
 };
-const loadUkrNetNews = ({ route, longTitle }) => __awaiter(void 0, void 0, void 0, function* () {
+const loadUkrNetNews = async ({ route, longTitle }) => {
     const url = `https://www.ukr.net/news/dat/${route}/0/`;
     try {
-        const news = yield nodeFetch(url, {
+        const news = await nodeFetch(url, {
             agent: proxyAgent,
         })
             .then((data) => data.json())
@@ -70,8 +61,8 @@ const loadUkrNetNews = ({ route, longTitle }) => __awaiter(void 0, void 0, void 
         console.log(error);
         return null;
     }
-});
-const loadAllNews = () => __awaiter(void 0, void 0, void 0, function* () {
+};
+const loadAllNews = async () => {
     const sections = [
         { route: 'main', longTitle: 'Головні події України та світу' },
         { route: 'russianaggression', longTitle: 'Війна РФ проти України' },
@@ -92,7 +83,7 @@ const loadAllNews = () => __awaiter(void 0, void 0, void 0, function* () {
         { route: 'donetsk', longTitle: 'Події в Донецьку та області' },
         { route: 'luhansk', longTitle: 'Події в Луганську та області' },
     ];
-    const news = yield Promise.all(sections.map(loadUkrNetNews));
+    const news = await Promise.all(sections.map(loadUkrNetNews));
     const result = {
         created: moment().toISOString(),
         news: news.filter((section) => section !== null),
@@ -101,7 +92,7 @@ const loadAllNews = () => __awaiter(void 0, void 0, void 0, function* () {
     const sResult = JSON.stringify(result, null, '\t');
     fs.writeFileSync(`${outputDir}/ukrnet.json`, sResult);
     console.log('\nAll routes loaded');
-});
+};
 if (!fs.existsSync(outputDir))
     fs.mkdirSync(outputDir);
 try {
@@ -110,3 +101,4 @@ try {
 catch (error) {
     console.error(error);
 }
+//# sourceMappingURL=loader.js.map
