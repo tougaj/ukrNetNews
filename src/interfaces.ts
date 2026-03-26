@@ -24,13 +24,14 @@ export interface IUkrNetSection extends ISection {
 export interface INews {
 	title: string;
 	description?: string;
-	created?: string;
+	created: string;
 	count?: number;
 }
 
 export interface NewsItem {
 	id: string;
 	title: string;
+	created: string;
 }
 
 export type TMessages = { [key: string]: INews };

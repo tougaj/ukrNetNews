@@ -15,7 +15,6 @@ export const UKRNET_SECTIONS: ISection[] = [
 	{ route: 'criminal', title: 'Події', longTitle: 'Оперативно про надзвичайні події' },
 	{ route: 'society', title: 'Суспільство', longTitle: 'Соціальні та культурні події' },
 	{ route: 'world', title: 'За кордоном', longTitle: 'Ситуація в світі' },
-	{ route: 'companies', title: 'Компанії', longTitle: 'Новини компаній' },
 
 	{ route: 'kyiv', longTitle: 'Київ' },
 	{ route: 'vinnytsya', longTitle: 'Вінниця' },
@@ -61,12 +60,12 @@ export const getNews = (messages: TMessages, tops: NewsItem[], maxCount = MESSAG
 	const news: string[] = tops
 		.slice(0, maxCount)
 		// .map(({ Title = '', Description = '', DateCreated, NewsCount, NewsId }) => {
-		.map(({ id, title }) => {
+		.map(({ id, title, created }) => {
 			if (messages[id] === undefined)
 				messages[id] = {
 					title: title.substring(0, MAX_LENGTH.title),
 					// description: Description.substring(0, MAX_LENGTH.description),
-					// created: moment(DateCreated * 1000).toISOString(),
+					created,
 					// count: NewsCount,
 				};
 			return id;

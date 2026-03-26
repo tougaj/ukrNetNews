@@ -1,5 +1,4 @@
 import fs from 'fs';
-import moment from 'moment';
 import puppeteer, { Page } from 'puppeteer';
 import { getNews, OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common';
 import { ISection, IUkrNetSection, NewsItem, TMessages } from './interfaces';
@@ -19,8 +18,6 @@ const argv = require('yargs')
 	.number(['t'])
 	.alias('d', 'debug')
 	.describe('d', 'Debug mode')
-	.alias('i', 'infinity')
-	.describe('i', 'Infinity iterations')
 	.alias('l', 'headless')
 	.describe('l', 'Use headless browser')
 	.alias('b', 'no-sandbox')
@@ -39,7 +36,6 @@ const argv = require('yargs')
 	proxy?: string;
 	headless?: boolean;
 	debug?: boolean;
-	infinity?: boolean;
 	sections?: string;
 	timeout?: number;
 	noSandbox?: boolean;
@@ -100,7 +96,7 @@ const loadSectionNews = async (
 
 	const news: NewsItem[] = [];
 
-	for (const { title, href, dataCount } of rawItems) {
+	for (const { title, href, dataCount, created } of rawItems) {
 		let id: string | null = null;
 
 		if (dataCount) {
@@ -111,7 +107,7 @@ const loadSectionNews = async (
 
 		if (!id || !title) continue;
 
-		news.push({ id, title });
+		news.push({ id, title, created });
 	}
 
 	const shortTitle = title ?? longTitle;
@@ -167,7 +163,7 @@ const loadAllNews = async (page: Page, sections: ISection[]) => {
 	console.log(Object.keys(messages).length);
 
 	const result = {
-		created: moment().toISOString(),
+		created: new Date().toISOString(),
 		news: news.filter((section) => section !== null),
 		messages,
 	};
@@ -175,11 +171,17 @@ const loadAllNews = async (page: Page, sections: ISection[]) => {
 	fs.writeFileSync(`${OUTPUT_DIR}/ukrnet.json`, sResult);
 };
 
+interface IRawItem {
+	title: string;
+	href: string;
+	dataCount: string | null;
+	created: string;
+}
 async function getRawNews(route: string, page: Page, timeout: number, caching = false) {
 	const cacheFileName = `${OUTPUT_DIR}/local.${route}.json`;
 	if (caching)
 		try {
-			return JSON.parse(fs.readFileSync(cacheFileName).toString());
+			return JSON.parse(fs.readFileSync(cacheFileName).toString()) as IRawItem[];
 		} catch (error) {
 			console.warn(`⚠️ ${route} — кеш відсутній. Використовуємо стандартний відбір повідомлень.`);
 		}
@@ -208,20 +210,19 @@ async function getRawNews(route: string, page: Page, timeout: number, caching = 
 	// 	await new Promise((resolve) => setTimeout(resolve, 1_500));
 	// }
 	const rawItems = await page.evaluate(() => {
-		const results: Array<{
-			title: string;
-			href: string;
-			dataCount: string | null;
-		}> = [];
+		const results: IRawItem[] = [];
 
 		for (const section of document.querySelectorAll('article section.im')) {
 			const anchor = section.querySelector<HTMLAnchorElement>('div.im-tl > a.im-tl_a');
 			if (!anchor) continue;
+			const time = section.querySelector<HTMLTimeElement>('.im-tm');
+			if (!time) continue;
 
 			results.push({
 				title: anchor.textContent?.trim() ?? '',
 				href: anchor.getAttribute('href') ?? '',
 				dataCount: anchor.getAttribute('data-count'),
+				created: time.textContent?.trim() ?? '',
 			});
 		}
 
@@ -236,23 +237,17 @@ async function getRawNews(route: string, page: Page, timeout: number, caching = 
 	const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
 	const sections = userSections ? UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : UKRNET_SECTIONS;
 
-	while (true) {
-		console.log('\nNews loading started at ' + moment().format('HH:mm:ss'));
-		console.time('🏁 News loaded');
-		try {
-			if (!browser.connected) {
-				({ browser, page } = await init());
-			}
-			await loadAllNews(page, sections);
-			// console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
-			console.timeEnd('🏁 News loaded');
-		} catch (error) {
-			console.log(`🔴 Error loading news ${error}`);
+	console.log('\nNews loading started');
+	console.time('🏁 News loaded');
+	try {
+		if (!browser.connected) {
+			({ browser, page } = await init());
 		}
-		if (!argv.infinity) break;
-
-		console.log(`⏰ Next run at ${moment().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
-		await sleep(TIMEOUT_BETWEEN_SESSIONS);
+		await loadAllNews(page, sections);
+		// console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
+		console.timeEnd('🏁 News loaded');
+	} catch (error) {
+		console.log(`🔴 Error loading news ${error}`);
 	}
 
 	await browser.close();

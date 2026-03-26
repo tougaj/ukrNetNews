@@ -4,7 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
-const moment_1 = __importDefault(require("moment"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const common_1 = require("./common");
 const TIMEOUT_BETWEEN_SESSIONS = (5 * 60 + 0) * 1000;
@@ -21,8 +20,6 @@ const argv = require('yargs')
     .number(['t'])
     .alias('d', 'debug')
     .describe('d', 'Debug mode')
-    .alias('i', 'infinity')
-    .describe('i', 'Infinity iterations')
     .alias('l', 'headless')
     .describe('l', 'Use headless browser')
     .alias('b', 'no-sandbox')
@@ -81,7 +78,7 @@ function extractIdFromUkrNetHref(href) {
 const loadSectionNews = async (page, messages, { route, title, longTitle }, timeout = MAIN_PAGE_LOADING_TIMEOUT) => {
     const rawItems = await getRawNews(route, page, timeout, isDebug);
     const news = [];
-    for (const { title, href, dataCount } of rawItems) {
+    for (const { title, href, dataCount, created } of rawItems) {
         let id = null;
         if (dataCount) {
             id = extractIdFromDataCount(dataCount);
@@ -91,7 +88,7 @@ const loadSectionNews = async (page, messages, { route, title, longTitle }, time
         }
         if (!id || !title)
             continue;
-        news.push({ id, title });
+        news.push({ id, title, created });
     }
     const shortTitle = title ?? longTitle;
     console.log(`✅ ${shortTitle} (${route}) loaded`);
@@ -139,7 +136,7 @@ const loadAllNews = async (page, sections) => {
     }
     console.log(Object.keys(messages).length);
     const result = {
-        created: (0, moment_1.default)().toISOString(),
+        created: new Date().toISOString(),
         news: news.filter((section) => section !== null),
         messages,
     };
@@ -183,10 +180,14 @@ async function getRawNews(route, page, timeout, caching = false) {
             const anchor = section.querySelector('div.im-tl > a.im-tl_a');
             if (!anchor)
                 continue;
+            const time = section.querySelector('.im-tm');
+            if (!time)
+                continue;
             results.push({
                 title: anchor.textContent?.trim() ?? '',
                 href: anchor.getAttribute('href') ?? '',
                 dataCount: anchor.getAttribute('data-count'),
+                created: time.textContent?.trim() ?? '',
             });
         }
         return results;
@@ -199,24 +200,18 @@ async function getRawNews(route, page, timeout, caching = false) {
     let { browser, page } = await init();
     const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
     const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
-    while (true) {
-        console.log('\nNews loading started at ' + (0, moment_1.default)().format('HH:mm:ss'));
-        console.time('🏁 News loaded');
-        try {
-            if (!browser.connected) {
-                ({ browser, page } = await init());
-            }
-            await loadAllNews(page, sections);
-            // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
-            console.timeEnd('🏁 News loaded');
+    console.log('\nNews loading started');
+    console.time('🏁 News loaded');
+    try {
+        if (!browser.connected) {
+            ({ browser, page } = await init());
         }
-        catch (error) {
-            console.log(`🔴 Error loading news ${error}`);
-        }
-        if (!argv.infinity)
-            break;
-        console.log(`⏰ Next run at ${(0, moment_1.default)().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
-        await (0, common_1.sleep)(TIMEOUT_BETWEEN_SESSIONS);
+        await loadAllNews(page, sections);
+        // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
+        console.timeEnd('🏁 News loaded');
+    }
+    catch (error) {
+        console.log(`🔴 Error loading news ${error}`);
     }
     await browser.close();
 })();
