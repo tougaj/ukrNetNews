@@ -58,6 +58,7 @@ exports.UKRNET_SECTIONS = [
 ];
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 exports.sleep = sleep;
+const reTime = new RegExp(/^\d\d:\d\d$/);
 const getNews = (messages, tops, maxCount = MESSAGES_MAX_COUNT) => {
     const news = tops
         .slice(0, maxCount)
@@ -65,7 +66,7 @@ const getNews = (messages, tops, maxCount = MESSAGES_MAX_COUNT) => {
         .map(({ id, title, created }) => {
         if (messages[id] === undefined) {
             const m = (0, moment_1.default)(created, 'HH:mm');
-            const ts = m.isValid() ? m.toISOString() : created; // Якщо дата некоректна, залишаємо оригінальне значення
+            const ts = m.isValid() && reTime.test(created) ? m.toISOString() : created; // Якщо дата некоректна, залишаємо оригінальне значення
             messages[id] = {
                 title: title.substring(0, MAX_LENGTH.title),
                 // description: Description.substring(0, MAX_LENGTH.description),

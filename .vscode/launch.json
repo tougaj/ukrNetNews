@@ -12,7 +12,8 @@
 			"program": "${workspaceFolder}/src/ptLoader.ts",
 			"preLaunchTask": "tsc",
 			"outFiles": ["${workspaceFolder}/dst/*.js"],
-			"args": ["-s", "\"main politics economics\""]
+			"args": ["-s", "\"crimea main politics economics\""]
+			// "args": ["-s", "\"crimea\""]
 			// "env": { "TZ": "UTC" }
 		}
 	]
