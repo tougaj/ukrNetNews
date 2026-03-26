@@ -1,3 +1,4 @@
+import moment from 'moment';
 import { ISection, NewsItem, TMessages } from './interfaces';
 
 export const OUTPUT_DIR = './output';
@@ -61,13 +62,16 @@ export const getNews = (messages: TMessages, tops: NewsItem[], maxCount = MESSAG
 		.slice(0, maxCount)
 		// .map(({ Title = '', Description = '', DateCreated, NewsCount, NewsId }) => {
 		.map(({ id, title, created }) => {
-			if (messages[id] === undefined)
+			if (messages[id] === undefined) {
+				const m = moment(created, 'HH:mm');
+				const ts = m.isValid() ? m.toISOString() : created; // Якщо дата некоректна, залишаємо оригінальне значення
 				messages[id] = {
 					title: title.substring(0, MAX_LENGTH.title),
 					// description: Description.substring(0, MAX_LENGTH.description),
-					created,
+					created: ts,
 					// count: NewsCount,
 				};
+			}
 			return id;
 		});
 	return news;

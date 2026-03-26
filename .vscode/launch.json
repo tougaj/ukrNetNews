@@ -13,6 +13,7 @@
 			"preLaunchTask": "tsc",
 			"outFiles": ["${workspaceFolder}/dst/*.js"],
 			"args": ["-s", "\"main politics economics\""]
+			// "env": { "TZ": "UTC" }
 		}
 	]
 }

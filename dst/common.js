@@ -1,6 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getNews = exports.sleep = exports.UKRNET_SECTIONS = exports.PUPPETEER_TIMEOUT = exports.OUTPUT_DIR = void 0;
+const moment_1 = __importDefault(require("moment"));
 exports.OUTPUT_DIR = './output';
 const MESSAGES_MAX_COUNT = 50;
 const MAX_LENGTH = {
@@ -59,13 +63,16 @@ const getNews = (messages, tops, maxCount = MESSAGES_MAX_COUNT) => {
         .slice(0, maxCount)
         // .map(({ Title = '', Description = '', DateCreated, NewsCount, NewsId }) => {
         .map(({ id, title, created }) => {
-        if (messages[id] === undefined)
+        if (messages[id] === undefined) {
+            const m = (0, moment_1.default)(created, 'HH:mm');
+            const ts = m.isValid() ? m.toISOString() : created; // Якщо дата некоректна, залишаємо оригінальне значення
             messages[id] = {
                 title: title.substring(0, MAX_LENGTH.title),
                 // description: Description.substring(0, MAX_LENGTH.description),
-                created,
+                created: ts,
                 // count: NewsCount,
             };
+        }
         return id;
     });
     return news;
