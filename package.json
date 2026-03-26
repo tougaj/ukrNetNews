@@ -4,10 +4,8 @@
 	"description": "",
 	"main": "app.js",
 	"scripts": {
-		"load": "node src/loader.js",
 		"ptLoad": "node dist/ptLoader.js -b",
-		"loadSingle": "node src/loaderSingle.js",
-		"dev": "node dst/ptLoader.js -d",
+		"dev": "node dst/ptLoader.js -b",
 		"devProxy": "node dst/ptLoader.js -p http://192.168.0.1:3128"
 	},
 	"author": "",

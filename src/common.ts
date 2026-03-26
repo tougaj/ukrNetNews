@@ -1,5 +1,4 @@
-import moment from 'moment';
-import { ISection, IUkrNetNews, TMessages } from './interfaces';
+import { ISection, NewsItem, TMessages } from './interfaces';
 
 export const OUTPUT_DIR = './output';
 const MESSAGES_MAX_COUNT = 50;
@@ -9,14 +8,14 @@ const MAX_LENGTH = {
 };
 export const PUPPETEER_TIMEOUT = 5; //in seconds
 export const UKRNET_SECTIONS: ISection[] = [
-	{ route: 'main', longTitle: 'Головні події України та світу' },
-	{ route: 'russianaggression', longTitle: 'Війна РФ проти України' },
-	{ route: 'politics', longTitle: 'Політичні новини країни' },
-	{ route: 'economics', longTitle: 'Економіка та бізнес' },
-	// { route: 'covid19', longTitle: 'Коронавірус COVID-19' },
-	{ route: 'criminal', longTitle: 'Оперативно про надзвичайні події' },
-	{ route: 'society', longTitle: 'Соціальні та культурні події' },
-	{ route: 'world', longTitle: 'Ситуація в світі' },
+	{ route: 'main', title: 'Головне', longTitle: 'Головні події України та світу' },
+	{ route: 'russianaggression', title: 'Війна', longTitle: 'Війна РФ проти України' },
+	{ route: 'politics', title: 'Політика', longTitle: 'Політичні новини країни' },
+	{ route: 'economics', title: 'Економіка', longTitle: 'Економіка та бізнес' },
+	{ route: 'criminal', title: 'Події', longTitle: 'Оперативно про надзвичайні події' },
+	{ route: 'society', title: 'Суспільство', longTitle: 'Соціальні та культурні події' },
+	{ route: 'world', title: 'За кордоном', longTitle: 'Ситуація в світі' },
+	{ route: 'companies', title: 'Компанії', longTitle: 'Новини компаній' },
 
 	{ route: 'kyiv', longTitle: 'Київ' },
 	{ route: 'vinnytsya', longTitle: 'Вінниця' },
@@ -58,18 +57,19 @@ export const UKRNET_SECTIONS: ISection[] = [
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const getNews = (messages: TMessages, tops: IUkrNetNews[], maxCount = MESSAGES_MAX_COUNT) => {
-	const news: number[] = tops
+export const getNews = (messages: TMessages, tops: NewsItem[], maxCount = MESSAGES_MAX_COUNT) => {
+	const news: string[] = tops
 		.slice(0, maxCount)
-		.map(({ Title = '', Description = '', DateCreated, NewsCount, NewsId }) => {
-			if (messages[NewsId] === undefined)
-				messages[NewsId] = {
-					title: Title.substring(0, MAX_LENGTH.title),
-					description: Description.substring(0, MAX_LENGTH.description),
-					created: moment(DateCreated * 1000).toISOString(),
-					count: NewsCount,
+		// .map(({ Title = '', Description = '', DateCreated, NewsCount, NewsId }) => {
+		.map(({ id, title }) => {
+			if (messages[id] === undefined)
+				messages[id] = {
+					title: title.substring(0, MAX_LENGTH.title),
+					// description: Description.substring(0, MAX_LENGTH.description),
+					// created: moment(DateCreated * 1000).toISOString(),
+					// count: NewsCount,
 				};
-			return NewsId;
+			return id;
 		});
 	return news;
 };

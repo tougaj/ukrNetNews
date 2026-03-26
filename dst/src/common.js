@@ -72,3 +72,4 @@ const getNews = (messages, tops, maxCount = MESSAGES_MAX_COUNT) => {
     return news;
 };
 exports.getNews = getNews;
+//# sourceMappingURL=common.js.map

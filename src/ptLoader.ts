@@ -1,8 +1,8 @@
 import fs from 'fs';
 import moment from 'moment';
 import puppeteer, { Page } from 'puppeteer';
-import { OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common';
-import { ISection, IUkrNetSection, TMessages } from './interfaces';
+import { getNews, OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common';
+import { ISection, IUkrNetSection, NewsItem, TMessages } from './interfaces';
 
 const TIMEOUT_BETWEEN_SESSIONS = (5 * 60 + 0) * 1000;
 // const TIMEOUT_BETWEEN_SESSIONS = (0 * 60 + 10) * 1000;
@@ -65,102 +65,90 @@ const init = async () => {
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36',
 	);
 	await page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
-	try {
-		await page.goto('https://www.ukr.net/', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
-		// await page.goto('https://www.ukr.net/', { waitUntil: 'networkidle2' });
-	} catch (error) {
-		console.log('Goto timeout. Continuing...');
-	}
-	try {
-		await page.waitForSelector('body', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
-		// page.waitForNetworkIdle();
-	} catch (error) {
-		console.log('Wait for selector timeout. Continuing...');
-	}
+	// try {
+	// 	await page.goto('https://www.ukr.net/', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
+	// 	// await page.goto('https://www.ukr.net/', { waitUntil: 'networkidle2' });
+	// } catch (error) {
+	// 	console.log('Goto timeout. Continuing...');
+	// }
+	// try {
+	// 	await page.waitForSelector('body', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
+	// 	// page.waitForNetworkIdle();
+	// } catch (error) {
+	// 	console.log('Wait for selector timeout. Continuing...');
+	// }
 	return { browser, page };
 };
 
-const loadUkrNetNews = async (page: Page, messages: TMessages, { route, longTitle }: ISection) => {
-	const url = `https://www.ukr.net/news/${route}.html`;
-	try {
-		try {
-			await page.goto(url, { waitUntil: 'networkidle2', timeout: MAIN_PAGE_LOADING_TIMEOUT });
-		} catch (error) {
-			console.log('Wait for selector timeout. Continuing...');
+function extractIdFromDataCount(dataCount: string): string | null {
+	const parts = dataCount.split(',').filter((p) => p.trim() !== '');
+	return parts[1] ?? null;
+}
+
+function extractIdFromUkrNetHref(href: string): string | null {
+	const match = href.match(/-(\d+)\.html$/);
+	return match?.[1] ?? null;
+}
+
+const loadSectionNews = async (
+	page: Page,
+	messages: TMessages,
+	{ route, title, longTitle }: ISection,
+	timeout: number = MAIN_PAGE_LOADING_TIMEOUT,
+) => {
+	const rawItems = await getRawNews(route, page, timeout, isDebug);
+
+	const news: NewsItem[] = [];
+
+	for (const { title, href, dataCount } of rawItems) {
+		let id: string | null = null;
+
+		if (dataCount) {
+			id = extractIdFromDataCount(dataCount);
+		} else if (href.includes('ukr.net')) {
+			id = extractIdFromUkrNetHref(href);
 		}
-		// await page.waitForNetworkIdle();
-		// await page.waitForSelector('body');
 
-		// const element = await page.$('body pre');
-		// if (!element) throw new Error('Can\'t find the "body pre" selector');
+		if (!id || !title) continue;
 
-		// const text = await page.evaluate((node) => node.textContent, element);
-		// const { tops, Title } = JSON.parse(text || '');
-		// const data = await page.evaluate((route) => {
-		// 	// return fetch('/api/3/section/clusters/list', {
-		// 	return fetch('https://www.ukr.net/api/3/section/clusters/list', {
-		// 		method: 'POST',
-		// 		headers: {
-		// 			'Content-Type': 'application/json',
-		// 			'X-Requested-With': 'XMLHttpRequest',
-		// 		},
-		// 		body: JSON.stringify({
-		// 			section_slug: route,
-		// 		}),
-		// 	}).then((res) => res.json());
-		// }, route);
-		const result = await page.evaluate((route) => {
-			return fetch('https://www.ukr.net/api/3/section/clusters/list', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Requested-With': 'XMLHttpRequest',
-				},
-				body: JSON.stringify({
-					section_slug: route,
-				}),
-			}).then(async (res) => ({
-				status: res.status,
-				text: await res.text(),
-			}));
-		}, route);
-
-		console.log(result);
-		// const data = await page.evaluate(async (route as any) => {
-		// 	const res = await fetch('/api/3/section/clusters/list', {
-		// 		method: 'POST',
-		// 		headers: {
-		// 			'Content-Type': 'application/json',
-		// 			'X-Requested-With': 'XMLHttpRequest',
-		// 		},
-		// 		body: JSON.stringify({
-		// 			section_slug: route,
-		// 		}),
-		// 	});
-
-		// 	return res.json();
-		// });
-
-		// console.log(`✅ ${Title} (${route}) loaded`);
-
-		// return {
-		// 	route,
-		// 	title: Title,
-		// 	longTitle,
-		// 	tops: getNews(messages, tops),
-		// } as IUkrNetSection;
-		return {
-			route,
-			title: '',
-			longTitle,
-			tops: [],
-		} as IUkrNetSection;
-	} catch (error) {
-		// console.log(`❌ !!! ERROR !!! ${route} not loaded from url: ${url} with error: ${error}`);
-		console.log(`❌ !!! ERROR !!! ${route} not loaded with error: ${error}`);
-		return null;
+		news.push({ id, title });
 	}
+
+	const shortTitle = title ?? longTitle;
+	console.log(`✅ ${shortTitle} (${route}) loaded`);
+	return {
+		route,
+		title: shortTitle,
+		longTitle,
+		tops: getNews(messages, news),
+	} as IUkrNetSection;
 };
+
+// const loadUkrNetNews = async (page: Page, messages: TMessages, { route, longTitle }: ISection) => {
+// 	const url = `https://www.ukr.net/news/dat/${route}/0/`;
+// 	try {
+// 		await page.goto(url);
+// 		// await page.waitForNetworkIdle();
+// 		await page.waitForSelector('body');
+
+// 		const element = await page.$('body pre');
+// 		if (!element) throw new Error('Can\'t find the "body pre" selector');
+
+// 		const text = await page.evaluate((node) => node.textContent, element);
+// 		const { tops, Title } = JSON.parse(text || '');
+// 		console.log(`✅ ${Title} (${route}) loaded`);
+
+// 		return {
+// 			route,
+// 			title: Title,
+// 			longTitle,
+// 			tops: getNews(messages, tops),
+// 		} as IUkrNetSection;
+// 	} catch (error) {
+// 		console.log(`❌ !!! ERROR !!! ${route} not loaded from url: ${url} with error: ${error}`);
+// 		return null;
+// 	}
+// };
 
 const loadAllNews = async (page: Page, sections: ISection[]) => {
 	const messages: TMessages = {};
@@ -172,10 +160,12 @@ const loadAllNews = async (page: Page, sections: ISection[]) => {
 			// console.log(`Sleeping for ${sleepTime}ms`);
 			await sleep(sleepTime);
 		}
-		const { route, longTitle } = sections[index];
-		news.push(await loadUkrNetNews(page, messages, { route, longTitle }));
-		if (isDebug && 2 <= index) break;
+		const section = sections[index];
+		news.push(await loadSectionNews(page, messages, section, 5_000));
+		// news.push(await loadUkrNetNews(page, messages, { route, longTitle }));
 	}
+	console.log(Object.keys(messages).length);
+
 	const result = {
 		created: moment().toISOString(),
 		news: news.filter((section) => section !== null),
@@ -184,6 +174,62 @@ const loadAllNews = async (page: Page, sections: ISection[]) => {
 	const sResult = JSON.stringify(result, null, '\t');
 	fs.writeFileSync(`${OUTPUT_DIR}/ukrnet.json`, sResult);
 };
+
+async function getRawNews(route: string, page: Page, timeout: number, caching = false) {
+	const cacheFileName = `${OUTPUT_DIR}/local.${route}.json`;
+	if (caching)
+		try {
+			return JSON.parse(fs.readFileSync(cacheFileName).toString());
+		} catch (error) {
+			console.warn(`⚠️ ${route} — кеш відсутній. Використовуємо стандартний відбір повідомлень.`);
+		}
+
+	const url = `https://www.ukr.net/news/${route}.html`;
+
+	// ⏳ goto з networkidle2 — таймаут очікуваний, продовжуємо
+	try {
+		// await page.goto(url, { waitUntil: 'networkidle2', timeout});
+		await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
+	} catch {
+		console.warn(`⚠️ networkidle2 не настав за ${timeout}ms, продовжуємо...`);
+	}
+
+	// 🔍 Чекаємо секцій — але навіть якщо не дочекались, збираємо що є
+	try {
+		await page.waitForSelector('section.im', { timeout: timeout });
+	} catch {
+		console.warn('⚠️ waitForSelector не спрацював, спробуємо зібрати наявний контент...');
+	}
+	// const html = await page.content();
+
+	// 📜 Два скроли до кінця — для підвантаження lazy load
+	// for (let i = 0; i < 2; i++) {
+	// 	await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
+	// 	await new Promise((resolve) => setTimeout(resolve, 1_500));
+	// }
+	const rawItems = await page.evaluate(() => {
+		const results: Array<{
+			title: string;
+			href: string;
+			dataCount: string | null;
+		}> = [];
+
+		for (const section of document.querySelectorAll('article section.im')) {
+			const anchor = section.querySelector<HTMLAnchorElement>('div.im-tl > a.im-tl_a');
+			if (!anchor) continue;
+
+			results.push({
+				title: anchor.textContent?.trim() ?? '',
+				href: anchor.getAttribute('href') ?? '',
+				dataCount: anchor.getAttribute('data-count'),
+			});
+		}
+
+		return results;
+	});
+	if (caching) fs.writeFileSync(cacheFileName, JSON.stringify(rawItems, null, '\t'));
+	return rawItems;
+}
 
 (async () => {
 	let { browser, page } = await init();

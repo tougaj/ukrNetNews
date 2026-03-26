@@ -78,8 +78,8 @@ function extractIdFromUkrNetHref(href) {
     const match = href.match(/-(\d+)\.html$/);
     return match?.[1] ?? null;
 }
-const loadSectionNews = async (page, messages, { route, title, longTitle }, timeout = MAIN_PAGE_LOADING_TIMEOUT) => {
-    const rawItems = await getRawNews(route, page, timeout, isDebug);
+const loadSectionNews = async (page, messages, { route, title, longTitle }, timeoutMs = 15_000) => {
+    const rawItems = await getRawNews(route, page, timeoutMs, true);
     const news = [];
     for (const { title, href, dataCount } of rawItems) {
         let id = null;
@@ -93,11 +93,9 @@ const loadSectionNews = async (page, messages, { route, title, longTitle }, time
             continue;
         news.push({ id, title });
     }
-    const shortTitle = title ?? longTitle;
-    console.log(`✅ ${shortTitle} (${route}) loaded`);
     return {
         route,
-        title: shortTitle,
+        title: title ?? longTitle,
         longTitle,
         tops: (0, common_1.getNews)(messages, news),
     };
@@ -137,7 +135,6 @@ const loadAllNews = async (page, sections) => {
         news.push(await loadSectionNews(page, messages, section, 5_000));
         // news.push(await loadUkrNetNews(page, messages, { route, longTitle }));
     }
-    console.log(Object.keys(messages).length);
     const result = {
         created: (0, moment_1.default)().toISOString(),
         news: news.filter((section) => section !== null),
@@ -146,27 +143,52 @@ const loadAllNews = async (page, sections) => {
     const sResult = JSON.stringify(result, null, '\t');
     fs_1.default.writeFileSync(`${common_1.OUTPUT_DIR}/ukrnet.json`, sResult);
 };
-async function getRawNews(route, page, timeout, caching = false) {
+(async () => {
+    let { browser, page } = await init();
+    const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
+    const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
+    while (true) {
+        console.log('\nNews loading started at ' + (0, moment_1.default)().format('HH:mm:ss'));
+        console.time('🏁 News loaded');
+        try {
+            if (!browser.connected) {
+                ({ browser, page } = await init());
+            }
+            await loadAllNews(page, sections);
+            // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
+            console.timeEnd('🏁 News loaded');
+        }
+        catch (error) {
+            console.log(`🔴 Error loading news ${error}`);
+        }
+        if (!argv.infinity)
+            break;
+        console.log(`⏰ Next run at ${(0, moment_1.default)().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
+        await (0, common_1.sleep)(TIMEOUT_BETWEEN_SESSIONS);
+    }
+    await browser.close();
+})();
+async function getRawNews(route, page, timeoutMs, caching = false) {
     const cacheFileName = `${common_1.OUTPUT_DIR}/local.${route}.json`;
     if (caching)
         try {
             return JSON.parse(fs_1.default.readFileSync(cacheFileName).toString());
         }
         catch (error) {
-            console.warn(`⚠️ ${route} — кеш відсутній. Використовуємо стандартний відбір повідомлень.`);
+            console.warn('⚠️ Кеш відсутній. Використовуємо стандартний відбір повідомлень.');
         }
     const url = `https://www.ukr.net/news/${route}.html`;
     // ⏳ goto з networkidle2 — таймаут очікуваний, продовжуємо
     try {
-        // await page.goto(url, { waitUntil: 'networkidle2', timeout});
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
+        // await page.goto(url, { waitUntil: 'networkidle2', timeout: timeoutMs });
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
     }
     catch {
-        console.warn(`⚠️ networkidle2 не настав за ${timeout}ms, продовжуємо...`);
+        console.warn(`⚠️ networkidle2 не настав за ${timeoutMs}ms, продовжуємо...`);
     }
     // 🔍 Чекаємо секцій — але навіть якщо не дочекались, збираємо що є
     try {
-        await page.waitForSelector('section.im', { timeout: timeout });
+        await page.waitForSelector('section.im', { timeout: timeoutMs });
     }
     catch {
         console.warn('⚠️ waitForSelector не спрацював, спробуємо зібрати наявний контент...');
@@ -195,28 +217,4 @@ async function getRawNews(route, page, timeout, caching = false) {
         fs_1.default.writeFileSync(cacheFileName, JSON.stringify(rawItems, null, '\t'));
     return rawItems;
 }
-(async () => {
-    let { browser, page } = await init();
-    const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
-    const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
-    while (true) {
-        console.log('\nNews loading started at ' + (0, moment_1.default)().format('HH:mm:ss'));
-        console.time('🏁 News loaded');
-        try {
-            if (!browser.connected) {
-                ({ browser, page } = await init());
-            }
-            await loadAllNews(page, sections);
-            // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
-            console.timeEnd('🏁 News loaded');
-        }
-        catch (error) {
-            console.log(`🔴 Error loading news ${error}`);
-        }
-        if (!argv.infinity)
-            break;
-        console.log(`⏰ Next run at ${(0, moment_1.default)().add(TIMEOUT_BETWEEN_SESSIONS, 'ms').format('HH:mm:ss')}`);
-        await (0, common_1.sleep)(TIMEOUT_BETWEEN_SESSIONS);
-    }
-    await browser.close();
-})();
+//# sourceMappingURL=ptLoader.js.map
