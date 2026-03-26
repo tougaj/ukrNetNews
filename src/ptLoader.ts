@@ -160,7 +160,7 @@ const loadAllNews = async (page: Page, sections: ISection[]) => {
 		news.push(await loadSectionNews(page, messages, section, 5_000));
 		// news.push(await loadUkrNetNews(page, messages, { route, longTitle }));
 	}
-	console.log(Object.keys(messages).length);
+	console.log(`${Object.keys(messages).length} titles loaded`);
 
 	const result = {
 		created: new Date().toISOString(),
