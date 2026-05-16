@@ -1,11 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const fs_1 = __importDefault(require("fs"));
-const puppeteer_1 = __importDefault(require("puppeteer"));
-const common_1 = require("./common");
+import fs from 'fs';
+import puppeteer from 'puppeteer';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+import { getNews, OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common.js';
 const browserOptions = {
     width: 800,
     height: 600,
@@ -20,9 +17,9 @@ const shutdown = async (signal) => {
 };
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-if (!fs_1.default.existsSync(common_1.OUTPUT_DIR))
-    fs_1.default.mkdirSync(common_1.OUTPUT_DIR);
-const argv = require('yargs')
+if (!fs.existsSync(OUTPUT_DIR))
+    fs.mkdirSync(OUTPUT_DIR);
+const argv = yargs(hideBin(process.argv))
     .usage('Usage: node ./dist/$0 [Options]')
     .string(['p', 's'])
     .number(['t'])
@@ -44,9 +41,9 @@ const argv = require('yargs')
     .help('h')
     .alias('h', 'help').argv;
 const isDebug = argv.debug;
-const MAIN_PAGE_LOADING_TIMEOUT = (argv.timeout || common_1.PUPPETEER_TIMEOUT) * 1000;
+const MAIN_PAGE_LOADING_TIMEOUT = (argv.timeout || PUPPETEER_TIMEOUT) * 1000;
 const init = async () => {
-    const browser = await puppeteer_1.default.launch({
+    const browser = await puppeteer.launch({
         headless: argv.headless ? true : false,
         // ignoreHTTPSErrors: true,
         args: [
@@ -116,7 +113,7 @@ const loadSectionNews = async (page, messages, { route, title, longTitle }, time
         route,
         title: shortTitle,
         longTitle,
-        tops: (0, common_1.getNews)(messages, news),
+        tops: getNews(messages, news),
     };
 };
 const loadAllNews = async (page, sections) => {
@@ -126,7 +123,7 @@ const loadAllNews = async (page, sections) => {
         if (index !== 0) {
             const sleepTime = Math.round(100 + Math.random() * 1000);
             // console.log(`Sleeping for ${sleepTime}ms`);
-            await (0, common_1.sleep)(sleepTime);
+            await sleep(sleepTime);
         }
         const section = sections[index];
         // news.push(await loadSectionNews(page, messages, section, 5_000));
@@ -145,13 +142,13 @@ const loadAllNews = async (page, sections) => {
         messages,
     };
     const sResult = JSON.stringify(result, null, '\t');
-    fs_1.default.writeFileSync(`${common_1.OUTPUT_DIR}/ukrnet.json`, sResult);
+    fs.writeFileSync(`${OUTPUT_DIR}/ukrnet.json`, sResult);
 };
 async function getRawNews(route, page, timeout, isDebug = false) {
-    const cacheFileName = `${common_1.OUTPUT_DIR}/local.${route}.json`;
+    const cacheFileName = `${OUTPUT_DIR}/local.${route}.json`;
     if (isDebug)
         try {
-            return JSON.parse(fs_1.default.readFileSync(cacheFileName).toString());
+            return JSON.parse(fs.readFileSync(cacheFileName).toString());
         }
         catch (error) {
             console.warn(`⚠️ ${route} — кеш відсутній. Використовуємо стандартний відбір повідомлень.`);
@@ -197,7 +194,7 @@ async function getRawNews(route, page, timeout, isDebug = false) {
         return results;
     });
     if (isDebug)
-        fs_1.default.writeFileSync(cacheFileName, JSON.stringify(rawItems, null, '\t'));
+        fs.writeFileSync(cacheFileName, JSON.stringify(rawItems, null, '\t'));
     return rawItems;
 }
 async function closeBrowser(browser, page) {
@@ -224,7 +221,7 @@ async function closeBrowser(browser, page) {
         browser = initResult.browser;
         page = initResult.page;
         const userSections = argv.sections ? new Set(argv.sections.split(/\s+/)) : null;
-        const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
+        const sections = userSections ? UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : UKRNET_SECTIONS;
         console.log('\nNews loading started');
         console.time('🏁 News loaded');
         await loadAllNews(page, sections);

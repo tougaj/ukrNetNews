@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { ISection, NewsItem, TMessages } from './interfaces';
+import { ISection, NewsItem, TMessages } from './interfaces.js';
 
 export const OUTPUT_DIR = './output';
 const MESSAGES_MAX_COUNT = 50;

@@ -1,7 +1,9 @@
 import fs from 'fs';
 import puppeteer, { Browser, Page } from 'puppeteer';
-import { getNews, OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common';
-import { ISection, IUkrNetSection, NewsItem, TMessages } from './interfaces';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+import { getNews, OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common.js';
+import { ISection, IUkrNetSection, NewsItem, TMessages } from './interfaces.js';
 
 const browserOptions = {
 	width: 800,
@@ -22,7 +24,7 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 
-const argv = require('yargs')
+const argv = yargs(hideBin(process.argv))
 	.usage('Usage: node ./dist/$0 [Options]')
 	.string(['p', 's'])
 	.number(['t'])

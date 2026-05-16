@@ -1,11 +1,11 @@
-const gulp = require('gulp');
-const ts = require('gulp-typescript');
-const changed = require('gulp-changed');
-const plumber = require('gulp-plumber');
-const uglify = require('gulp-uglify');
-const del = require('del');
+import { deleteAsync } from 'del';
+import gulp from 'gulp';
+import changed from 'gulp-changed';
+import plumber from 'gulp-plumber';
+import terser from 'gulp-terser';
+import ts from 'gulp-typescript';
 
-let paths = {
+const paths = {
 	scripts: {
 		src: ['src/**/*.ts', '!src/**/*.d.ts'],
 		dst: './dst',
@@ -13,29 +13,25 @@ let paths = {
 	},
 };
 
-let tsProject = ts.createProject('./src/tsconfig.json');
+const tsProject = ts.createProject('./src/tsconfig.json');
 
 function typeScripts() {
-	let tsResult = gulp
+	const tsResult = gulp
 		.src(paths.scripts.src)
 		.pipe(plumber())
-		.pipe(
-			changed('.', {
-				extension: '.js',
-			}),
-		)
+		.pipe(changed('.', { extension: '.js' }))
 		.pipe(tsProject());
 
 	return tsResult.js.pipe(plumber()).pipe(gulp.dest(paths.scripts.dst));
 }
 
-const clean = () => del([paths.scripts.dist]);
+const clean = () => deleteAsync([paths.scripts.dist]);
 
 const compress = () => {
 	return gulp
 		.src([`${paths.scripts.dst}/*.js`, `!${paths.scripts.dst}/interfaces.js`])
 		.pipe(plumber())
-		.pipe(uglify())
+		.pipe(terser())
 		.pipe(gulp.dest(paths.scripts.dist));
 };
 
@@ -44,9 +40,6 @@ function watch() {
 }
 
 gulp.task('clean', clean);
-
 gulp.task('ts', typeScripts);
-
 gulp.task('default', gulp.series(typeScripts, watch));
-
 gulp.task('build', gulp.series(clean, typeScripts, compress));

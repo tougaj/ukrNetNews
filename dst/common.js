@@ -1,18 +1,12 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getNews = exports.sleep = exports.UKRNET_SECTIONS = exports.PUPPETEER_TIMEOUT = exports.OUTPUT_DIR = void 0;
-const moment_1 = __importDefault(require("moment"));
-exports.OUTPUT_DIR = './output';
+import moment from 'moment';
+export const OUTPUT_DIR = './output';
 const MESSAGES_MAX_COUNT = 50;
 const MAX_LENGTH = {
     title: 200,
     description: 1000,
 };
-exports.PUPPETEER_TIMEOUT = 5; //in seconds
-exports.UKRNET_SECTIONS = [
+export const PUPPETEER_TIMEOUT = 5; //in seconds
+export const UKRNET_SECTIONS = [
     { route: 'main', title: 'Головне', longTitle: 'Головні події України та світу' },
     { route: 'russianaggression', title: 'Війна', longTitle: 'Війна РФ проти України' },
     { route: 'politics', title: 'Політика', longTitle: 'Політичні новини країни' },
@@ -56,16 +50,15 @@ exports.UKRNET_SECTIONS = [
     // { route: 'donetsk', longTitle: 'Події в Донецьку та області' },
     // { route: 'luhansk', longTitle: 'Події в Луганську та області' },
 ];
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-exports.sleep = sleep;
+export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const reTime = new RegExp(/^\d\d:\d\d$/);
-const getNews = (messages, tops, maxCount = MESSAGES_MAX_COUNT) => {
+export const getNews = (messages, tops, maxCount = MESSAGES_MAX_COUNT) => {
     const news = tops
         .slice(0, maxCount)
         // .map(({ Title = '', Description = '', DateCreated, NewsCount, NewsId }) => {
         .map(({ id, title, created }) => {
         if (messages[id] === undefined) {
-            const m = (0, moment_1.default)(created, 'HH:mm');
+            const m = moment(created, 'HH:mm');
             const ts = m.isValid() && reTime.test(created) ? m.toISOString() : created; // Якщо дата некоректна, залишаємо оригінальне значення
             messages[id] = {
                 title: title.substring(0, MAX_LENGTH.title),
@@ -78,4 +71,3 @@ const getNews = (messages, tops, maxCount = MESSAGES_MAX_COUNT) => {
     });
     return news;
 };
-exports.getNews = getNews;
