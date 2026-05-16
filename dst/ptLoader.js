@@ -227,6 +227,7 @@ async function closeBrowser(browser, page) {
         await loadAllNews(page, sections);
         // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
         console.timeEnd('🏁 News loaded');
+        console.log(`at ${new Date().toLocaleString('uk-UA')}`);
     }
     catch (error) {
         exitCode = 1;
