@@ -160,22 +160,43 @@ async function getRawNews(route, page, timeout, caching = false) {
         fs_1.default.writeFileSync(cacheFileName, JSON.stringify(rawItems, null, '\t'));
     return rawItems;
 }
-(async () => {
-    let { browser, page } = await init();
-    const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
-    const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
-    console.log('\nNews loading started');
-    console.time('🏁 News loaded');
+async function closeBrowser(browser) {
     try {
-        if (!browser.connected) {
-            ({ browser, page } = await init());
+        await Promise.race([
+            browser.close(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Browser close timeout')), 15000)),
+        ]);
+    }
+    catch (e) {
+        console.error('💀 browser.close failed:', e);
+        try {
+            browser.process()?.kill('SIGKILL');
         }
-        await loadAllNews(page, sections);
-        // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
-        console.timeEnd('🏁 News loaded');
+        catch { }
     }
-    catch (error) {
-        console.log(`🔴 Error loading news ${error}`);
+}
+(async () => {
+    let browser = null;
+    try {
+        const initResult = await init();
+        browser = initResult.browser;
+        const page = initResult.page;
+        const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
+        const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
+        console.log('\nNews loading started');
+        console.time('🏁 News loaded');
+        try {
+            await loadAllNews(page, sections);
+            // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
+            console.timeEnd('🏁 News loaded');
+        }
+        catch (error) {
+            console.log(`🔴 Error loading news ${error}`);
+        }
     }
-    await browser.close();
+    finally {
+        if (browser) {
+            await closeBrowser(browser);
+        }
+    }
 })();

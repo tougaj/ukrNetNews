@@ -1,5 +1,5 @@
 import fs from 'fs';
-import puppeteer, { Page } from 'puppeteer';
+import puppeteer, { Browser, Page } from 'puppeteer';
 import { getNews, OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common';
 import { ISection, IUkrNetSection, NewsItem, TMessages } from './interfaces';
 
@@ -192,23 +192,43 @@ async function getRawNews(route: string, page: Page, timeout: number, caching = 
 	return rawItems;
 }
 
-(async () => {
-	let { browser, page } = await init();
-	const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
-	const sections = userSections ? UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : UKRNET_SECTIONS;
-
-	console.log('\nNews loading started');
-	console.time('🏁 News loaded');
+async function closeBrowser(browser: Browser) {
 	try {
-		if (!browser.connected) {
-			({ browser, page } = await init());
-		}
-		await loadAllNews(page, sections);
-		// console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
-		console.timeEnd('🏁 News loaded');
-	} catch (error) {
-		console.log(`🔴 Error loading news ${error}`);
-	}
+		await Promise.race([
+			browser.close(),
+			new Promise((_, reject) => setTimeout(() => reject(new Error('Browser close timeout')), 15000)),
+		]);
+	} catch (e) {
+		console.error('💀 browser.close failed:', e);
 
-	await browser.close();
+		try {
+			browser.process()?.kill('SIGKILL');
+		} catch {}
+	}
+}
+
+(async () => {
+	let browser: Browser | null = null;
+	try {
+		const initResult = await init();
+		browser = initResult.browser;
+		const page = initResult.page;
+
+		const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
+		const sections = userSections ? UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : UKRNET_SECTIONS;
+
+		console.log('\nNews loading started');
+		console.time('🏁 News loaded');
+		try {
+			await loadAllNews(page, sections);
+			// console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
+			console.timeEnd('🏁 News loaded');
+		} catch (error) {
+			console.log(`🔴 Error loading news ${error}`);
+		}
+	} finally {
+		if (browser) {
+			await closeBrowser(browser);
+		}
+	}
 })();
