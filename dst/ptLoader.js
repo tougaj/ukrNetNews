@@ -205,6 +205,7 @@ async function closeBrowser(browser, page) {
             browser.close(),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Browser close timeout')), 15000)),
         ]);
+        console.log(`☑️ Browser closed at ${formatLocalDate()}`);
     }
     catch (e) {
         console.error('💀 browser.close failed:', e);
