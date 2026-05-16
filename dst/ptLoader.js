@@ -214,6 +214,10 @@ async function closeBrowser(browser, page) {
         catch { }
     }
 }
+function formatLocalDate(locale = 'uk-UA') {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return `${new Date().toLocaleString(locale, { timeZone: tz })} (${tz})`;
+}
 (async () => {
     let exitCode = 0;
     try {
@@ -227,7 +231,7 @@ async function closeBrowser(browser, page) {
         await loadAllNews(page, sections);
         // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
         console.timeEnd('🏁 News loaded');
-        console.log(`at ${new Date().toLocaleString('uk-UA')}`);
+        console.log(`at ${formatLocalDate()}`);
     }
     catch (error) {
         exitCode = 1;
