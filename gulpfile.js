@@ -13,7 +13,7 @@ let paths = {
 	},
 };
 
-let tsProject = ts.createProject('./tsconfig.json');
+let tsProject = ts.createProject('./src/tsconfig.json');
 
 function typeScripts() {
 	let tsResult = gulp
@@ -22,7 +22,7 @@ function typeScripts() {
 		.pipe(
 			changed('.', {
 				extension: '.js',
-			})
+			}),
 		)
 		.pipe(tsProject());
 

@@ -18,13 +18,13 @@
 		"yargs": "^15.0.2"
 	},
 	"devDependencies": {
-		"@types/node": "^16.4.13",
+		"@types/node": "^24.12.4",
 		"del": "^6.0.0",
 		"gulp": "^4.0.2",
 		"gulp-changed": "^4.0.3",
 		"gulp-plumber": "^1.2.1",
 		"gulp-typescript": "^6.0.0-alpha.1",
 		"gulp-uglify": "^3.0.2",
-		"typescript": "^5.3.3"
+		"typescript": "^6.0.3"
 	}
 }

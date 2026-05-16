@@ -3,8 +3,6 @@ import puppeteer, { Page } from 'puppeteer';
 import { getNews, OUTPUT_DIR, PUPPETEER_TIMEOUT, sleep, UKRNET_SECTIONS } from './common';
 import { ISection, IUkrNetSection, NewsItem, TMessages } from './interfaces';
 
-const TIMEOUT_BETWEEN_SESSIONS = (5 * 60 + 0) * 1000;
-// const TIMEOUT_BETWEEN_SESSIONS = (0 * 60 + 10) * 1000;
 const browserOptions = {
 	width: 800,
 	height: 600,
@@ -61,18 +59,6 @@ const init = async () => {
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36',
 	);
 	await page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
-	// try {
-	// 	await page.goto('https://www.ukr.net/', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
-	// 	// await page.goto('https://www.ukr.net/', { waitUntil: 'networkidle2' });
-	// } catch (error) {
-	// 	console.log('Goto timeout. Continuing...');
-	// }
-	// try {
-	// 	await page.waitForSelector('body', { timeout: MAIN_PAGE_LOADING_TIMEOUT });
-	// 	// page.waitForNetworkIdle();
-	// } catch (error) {
-	// 	console.log('Wait for selector timeout. Continuing...');
-	// }
 	return { browser, page };
 };
 
@@ -119,32 +105,6 @@ const loadSectionNews = async (
 		tops: getNews(messages, news),
 	} as IUkrNetSection;
 };
-
-// const loadUkrNetNews = async (page: Page, messages: TMessages, { route, longTitle }: ISection) => {
-// 	const url = `https://www.ukr.net/news/dat/${route}/0/`;
-// 	try {
-// 		await page.goto(url);
-// 		// await page.waitForNetworkIdle();
-// 		await page.waitForSelector('body');
-
-// 		const element = await page.$('body pre');
-// 		if (!element) throw new Error('Can\'t find the "body pre" selector');
-
-// 		const text = await page.evaluate((node) => node.textContent, element);
-// 		const { tops, Title } = JSON.parse(text || '');
-// 		console.log(`✅ ${Title} (${route}) loaded`);
-
-// 		return {
-// 			route,
-// 			title: Title,
-// 			longTitle,
-// 			tops: getNews(messages, tops),
-// 		} as IUkrNetSection;
-// 	} catch (error) {
-// 		console.log(`❌ !!! ERROR !!! ${route} not loaded from url: ${url} with error: ${error}`);
-// 		return null;
-// 	}
-// };
 
 const loadAllNews = async (page: Page, sections: ISection[]) => {
 	const messages: TMessages = {};
