@@ -8,6 +8,16 @@ const browserOptions = {
 	height: 600,
 };
 
+process.on('SIGINT', async () => {
+	console.log('🛑 SIGINT');
+	process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+	console.log('🛑 SIGTERM');
+	process.exit(0);
+});
+
 if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 
 const argv = require('yargs')
@@ -51,10 +61,27 @@ const init = async () => {
 			`--proxy-server=${argv.proxy || ''}`,
 			argv.noSandbox ? '--no-sandbox' : '',
 			// '--disable-setuid-sandbox',
+			'--disable-dev-shm-usage',
+			'--disable-background-networking',
+			'--disable-background-timer-throttling',
+			'--disable-renderer-backgrounding',
+			'--disable-features=Translate,BackForwardCache,AcceptCHFrame',
+			'--disable-ipc-flooding-protection',
 		],
 	});
 	const page = (await browser.pages())[0];
-	// const page = await browser.newPage();
+
+	await page.setRequestInterception(true);
+
+	page.on('request', (req) => {
+		const type = req.resourceType();
+		if (type === 'image' || type === 'font' || type === 'media' || type === 'stylesheet') {
+			req.abort();
+			return;
+		}
+		req.continue();
+	});
+
 	await page.setUserAgent(
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36',
 	);
@@ -192,8 +219,10 @@ async function getRawNews(route: string, page: Page, timeout: number, caching = 
 	return rawItems;
 }
 
-async function closeBrowser(browser: Browser) {
+async function closeBrowser(browser: Browser, page: Page | null) {
 	try {
+		page?.removeAllListeners();
+
 		await Promise.race([
 			browser.close(),
 			new Promise((_, reject) => setTimeout(() => reject(new Error('Browser close timeout')), 15000)),
@@ -209,10 +238,11 @@ async function closeBrowser(browser: Browser) {
 
 (async () => {
 	let browser: Browser | null = null;
+	let page: Page | null = null;
 	try {
 		const initResult = await init();
 		browser = initResult.browser;
-		const page = initResult.page;
+		page = initResult.page;
 
 		const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
 		const sections = userSections ? UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : UKRNET_SECTIONS;
@@ -228,7 +258,8 @@ async function closeBrowser(browser: Browser) {
 		}
 	} finally {
 		if (browser) {
-			await closeBrowser(browser);
+			await closeBrowser(browser, page);
 		}
+		process.exit(0);
 	}
 })();
