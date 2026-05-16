@@ -8,15 +8,17 @@ const browserOptions = {
 	height: 600,
 };
 
-process.on('SIGINT', async () => {
-	console.log('🛑 SIGINT');
-	process.exit(0);
-});
+let browser: Browser | null = null;
+let page: Page | null = null;
 
-process.on('SIGTERM', async () => {
-	console.log('🛑 SIGTERM');
+const shutdown = async (signal: string) => {
+	console.log(`🛑 ${signal}`);
+	if (browser) await closeBrowser(browser, page);
 	process.exit(0);
-});
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 
@@ -67,19 +69,19 @@ const init = async () => {
 			'--disable-renderer-backgrounding',
 			'--disable-features=Translate,BackForwardCache,AcceptCHFrame',
 			'--disable-ipc-flooding-protection',
-		],
+		].filter(Boolean),
 	});
 	const page = (await browser.pages())[0];
 
 	await page.setRequestInterception(true);
 
-	page.on('request', async (req) => {
+	page.on('request', (req) => {
 		const type = req.resourceType();
 		if (type === 'image' || type === 'font' || type === 'media' || type === 'stylesheet') {
-			await req.abort();
+			req.abort().catch(() => {});
 			return;
 		}
-		await req.continue();
+		req.continue().catch(() => {});
 	});
 
 	/**
@@ -117,7 +119,7 @@ const loadSectionNews = async (
 
 	const news: NewsItem[] = [];
 
-	for (const { title, href, dataCount, created } of rawItems) {
+	for (const { title: newsTitle, href, dataCount, created } of rawItems) {
 		let id: string | null = null;
 
 		if (dataCount) {
@@ -126,9 +128,9 @@ const loadSectionNews = async (
 			id = extractIdFromUkrNetHref(href);
 		}
 
-		if (!id || !title) continue;
+		if (!id || !newsTitle) continue;
 
-		news.push({ id, title, created });
+		news.push({ id, title: newsTitle, created });
 	}
 
 	const shortTitle = title ?? longTitle;
@@ -152,8 +154,13 @@ const loadAllNews = async (page: Page, sections: ISection[]) => {
 			await sleep(sleepTime);
 		}
 		const section = sections[index];
-		news.push(await loadSectionNews(page, messages, section, 5_000));
-		// news.push(await loadUkrNetNews(page, messages, { route, longTitle }));
+		// news.push(await loadSectionNews(page, messages, section, 5_000));
+		try {
+			news.push(await loadSectionNews(page, messages, section, 5_000));
+		} catch (err) {
+			console.error(`🔴 Помилка завантаження секції ${section.route}:`, err);
+			news.push(null);
+		}
 	}
 	console.log(`${Object.keys(messages).length} titles loaded`);
 
@@ -172,9 +179,9 @@ interface IRawItem {
 	dataCount: string | null;
 	created: string;
 }
-async function getRawNews(route: string, page: Page, timeout: number, caching = false) {
+async function getRawNews(route: string, page: Page, timeout: number, isDebug = false) {
 	const cacheFileName = `${OUTPUT_DIR}/local.${route}.json`;
-	if (caching)
+	if (isDebug)
 		try {
 			return JSON.parse(fs.readFileSync(cacheFileName).toString()) as IRawItem[];
 		} catch (error) {
@@ -223,7 +230,7 @@ async function getRawNews(route: string, page: Page, timeout: number, caching = 
 
 		return results;
 	});
-	if (caching) fs.writeFileSync(cacheFileName, JSON.stringify(rawItems, null, '\t'));
+	if (isDebug) fs.writeFileSync(cacheFileName, JSON.stringify(rawItems, null, '\t'));
 	return rawItems;
 }
 
@@ -246,15 +253,13 @@ async function closeBrowser(browser: Browser, page: Page | null) {
 }
 
 (async () => {
-	let browser: Browser | null = null;
-	let page: Page | null = null;
 	let exitCode = 0;
 	try {
 		const initResult = await init();
 		browser = initResult.browser;
 		page = initResult.page;
 
-		const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
+		const userSections = argv.sections ? new Set(argv.sections.split(/\s+/)) : null;
 		const sections = userSections ? UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : UKRNET_SECTIONS;
 
 		console.log('\nNews loading started');

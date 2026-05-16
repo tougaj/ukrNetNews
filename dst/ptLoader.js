@@ -10,14 +10,16 @@ const browserOptions = {
     width: 800,
     height: 600,
 };
-process.on('SIGINT', async () => {
-    console.log('🛑 SIGINT');
+let browser = null;
+let page = null;
+const shutdown = async (signal) => {
+    console.log(`🛑 ${signal}`);
+    if (browser)
+        await closeBrowser(browser, page);
     process.exit(0);
-});
-process.on('SIGTERM', async () => {
-    console.log('🛑 SIGTERM');
-    process.exit(0);
-});
+};
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 if (!fs_1.default.existsSync(common_1.OUTPUT_DIR))
     fs_1.default.mkdirSync(common_1.OUTPUT_DIR);
 const argv = require('yargs')
@@ -59,17 +61,17 @@ const init = async () => {
             '--disable-renderer-backgrounding',
             '--disable-features=Translate,BackForwardCache,AcceptCHFrame',
             '--disable-ipc-flooding-protection',
-        ],
+        ].filter(Boolean),
     });
     const page = (await browser.pages())[0];
     await page.setRequestInterception(true);
-    page.on('request', async (req) => {
+    page.on('request', (req) => {
         const type = req.resourceType();
         if (type === 'image' || type === 'font' || type === 'media' || type === 'stylesheet') {
-            await req.abort();
+            req.abort().catch(() => { });
             return;
         }
-        await req.continue();
+        req.continue().catch(() => { });
     });
     /**
      * Сучасний headless Chrome вже має нормальний UA.
@@ -96,7 +98,7 @@ function extractIdFromUkrNetHref(href) {
 const loadSectionNews = async (page, messages, { route, title, longTitle }, timeout = MAIN_PAGE_LOADING_TIMEOUT) => {
     const rawItems = await getRawNews(route, page, timeout, isDebug);
     const news = [];
-    for (const { title, href, dataCount, created } of rawItems) {
+    for (const { title: newsTitle, href, dataCount, created } of rawItems) {
         let id = null;
         if (dataCount) {
             id = extractIdFromDataCount(dataCount);
@@ -104,9 +106,9 @@ const loadSectionNews = async (page, messages, { route, title, longTitle }, time
         else if (href.includes('ukr.net')) {
             id = extractIdFromUkrNetHref(href);
         }
-        if (!id || !title)
+        if (!id || !newsTitle)
             continue;
-        news.push({ id, title, created });
+        news.push({ id, title: newsTitle, created });
     }
     const shortTitle = title ?? longTitle;
     console.log(`✅ ${shortTitle} (${route}) loaded`);
@@ -127,8 +129,14 @@ const loadAllNews = async (page, sections) => {
             await (0, common_1.sleep)(sleepTime);
         }
         const section = sections[index];
-        news.push(await loadSectionNews(page, messages, section, 5_000));
-        // news.push(await loadUkrNetNews(page, messages, { route, longTitle }));
+        // news.push(await loadSectionNews(page, messages, section, 5_000));
+        try {
+            news.push(await loadSectionNews(page, messages, section, 5_000));
+        }
+        catch (err) {
+            console.error(`🔴 Помилка завантаження секції ${section.route}:`, err);
+            news.push(null);
+        }
     }
     console.log(`${Object.keys(messages).length} titles loaded`);
     const result = {
@@ -139,9 +147,9 @@ const loadAllNews = async (page, sections) => {
     const sResult = JSON.stringify(result, null, '\t');
     fs_1.default.writeFileSync(`${common_1.OUTPUT_DIR}/ukrnet.json`, sResult);
 };
-async function getRawNews(route, page, timeout, caching = false) {
+async function getRawNews(route, page, timeout, isDebug = false) {
     const cacheFileName = `${common_1.OUTPUT_DIR}/local.${route}.json`;
-    if (caching)
+    if (isDebug)
         try {
             return JSON.parse(fs_1.default.readFileSync(cacheFileName).toString());
         }
@@ -188,7 +196,7 @@ async function getRawNews(route, page, timeout, caching = false) {
         }
         return results;
     });
-    if (caching)
+    if (isDebug)
         fs_1.default.writeFileSync(cacheFileName, JSON.stringify(rawItems, null, '\t'));
     return rawItems;
 }
@@ -210,14 +218,12 @@ async function closeBrowser(browser, page) {
     }
 }
 (async () => {
-    let browser = null;
-    let page = null;
     let exitCode = 0;
     try {
         const initResult = await init();
         browser = initResult.browser;
         page = initResult.page;
-        const userSections = argv.sections ? new Set(argv.sections?.split(/\s+/)) : null;
+        const userSections = argv.sections ? new Set(argv.sections.split(/\s+/)) : null;
         const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
         console.log('\nNews loading started');
         console.time('🏁 News loaded');
