@@ -63,15 +63,25 @@ const init = async () => {
     });
     const page = (await browser.pages())[0];
     await page.setRequestInterception(true);
-    page.on('request', (req) => {
+    page.on('request', async (req) => {
         const type = req.resourceType();
         if (type === 'image' || type === 'font' || type === 'media' || type === 'stylesheet') {
-            req.abort();
+            await req.abort();
             return;
         }
-        req.continue();
+        await req.continue();
     });
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36');
+    /**
+     * Сучасний headless Chrome вже має нормальний UA.
+     * Більше того:
+     * старий Chrome 83 виглядає підозріло;
+     * антиботи це бачать;
+     * версія Chrome не збігається з реальною Chromium версією Puppeteer.
+     */
+    // await page.setUserAgent({
+    // 	userAgent:
+    // 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+    // });
     await page.setViewport({ width: browserOptions.width - 45, height: browserOptions.height, deviceScaleFactor: 1 });
     return { browser, page };
 };
@@ -145,7 +155,7 @@ async function getRawNews(route, page, timeout, caching = false) {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
     }
     catch {
-        console.warn(`⚠️ networkidle2 не настав за ${timeout}ms, продовжуємо...`);
+        console.warn(`⚠️ domcontentloaded не настав за ${timeout}ms, продовжуємо...`);
     }
     // 🔍 Чекаємо секцій — але навіть якщо не дочекались, збираємо що є
     try {
@@ -185,6 +195,7 @@ async function getRawNews(route, page, timeout, caching = false) {
 async function closeBrowser(browser, page) {
     try {
         page?.removeAllListeners();
+        await page?.close().catch(() => { });
         await Promise.race([
             browser.close(),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Browser close timeout')), 15000)),
@@ -201,6 +212,7 @@ async function closeBrowser(browser, page) {
 (async () => {
     let browser = null;
     let page = null;
+    let exitCode = 0;
     try {
         const initResult = await init();
         browser = initResult.browser;
@@ -209,19 +221,18 @@ async function closeBrowser(browser, page) {
         const sections = userSections ? common_1.UKRNET_SECTIONS.filter(({ route }) => userSections.has(route)) : common_1.UKRNET_SECTIONS;
         console.log('\nNews loading started');
         console.time('🏁 News loaded');
-        try {
-            await loadAllNews(page, sections);
-            // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
-            console.timeEnd('🏁 News loaded');
-        }
-        catch (error) {
-            console.log(`🔴 Error loading news ${error}`);
-        }
+        await loadAllNews(page, sections);
+        // console.log('🟢 News loading finished at ' + moment().format('HH:mm:ss'));
+        console.timeEnd('🏁 News loaded');
+    }
+    catch (error) {
+        exitCode = 1;
+        console.log(`🔴 Error loading news ${error}`);
     }
     finally {
         if (browser) {
             await closeBrowser(browser, page);
         }
-        process.exit(0);
     }
+    process.exit(exitCode);
 })();
