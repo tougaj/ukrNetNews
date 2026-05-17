@@ -1,19 +1,25 @@
-# Базовий образ
-FROM node:20-slim
+FROM node:22-slim
 
-# Встановлення необхідних пакетів для Puppeteer і Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
 RUN apt-get update && apt-get install -y \
     libnss3 \
+    libnspr4 \
     libatk1.0-0 \
+    libatk-bridge2.0-0 \
     libx11-xcb1 \
     libxcomposite1 \
     libxdamage1 \
     libxrandr2 \
+    libxkbcommon0 \
+    libglib2.0-0 \
     libasound2 \
     libpangocairo-1.0-0 \
     libcups2 \
     libdrm2 \
     libgbm1 \
+    libgtk-3-0 \
     libpango-1.0-0 \
     libxshmfence1 \
     xdg-utils \
@@ -22,27 +28,14 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Встановлення робочої директорії
 WORKDIR /app
 
-# Копіюємо файли
 COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Встановлюємо залежності
-RUN npm install
-
-# Копіюємо ваш скрипт
 COPY ./dist .
 
-# Встановлюємо змінні середовища для Puppeteer
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-
-# Встановлюємо аргумент для скрипта
-# ARG SECTIONS="-b -i -s 'some string parameters'"
-
-# Передаємо значення ARG у ENV
 ENV SECTIONS=""
-ENV TIMEOUT=300
+ENV TIMEOUT=600
 
-# Команда запуску контейнера
 CMD ["bash", "-c", "while true; do node ptLoader.js -lb -s \"$SECTIONS\"; sleep $TIMEOUT; done"]
