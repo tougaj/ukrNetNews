@@ -198,22 +198,32 @@ async function getRawNews(route, page, timeout, isDebug = false) {
     return rawItems;
 }
 async function closeBrowser(browser, page) {
-    try {
-        page?.removeAllListeners();
-        await page?.close().catch(() => { });
-        await Promise.race([
-            browser.close(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Browser close timeout')), 15000)),
-        ]);
-        console.log(`☑️ Browser closed at ${formatLocalDate()}`);
-    }
-    catch (e) {
-        console.error('💀 browser.close failed:', e);
+    const doClose = async () => {
         try {
-            browser.process()?.kill('SIGKILL');
+            page?.removeAllListeners();
+            await page?.close().catch(() => { });
+            await Promise.race([
+                browser.close(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('browser.close timeout')), 15_000)),
+            ]);
+            console.log(`☑️ Browser closed at ${formatLocalDate()}`);
         }
-        catch { }
-    }
+        catch (e) {
+            console.error('💀 browser.close failed:', e);
+            try {
+                browser.process()?.kill('SIGKILL');
+            }
+            catch { }
+        }
+    };
+    // await Promise.race([doClose(), new Promise<void>((resolve) => setTimeout(resolve, 18_000).unref())]);
+    await Promise.race([
+        doClose(),
+        new Promise((resolve) => setTimeout(() => {
+            console.warn('⚠️ closeBrowser: hard timeout (18s) — примусове завершення');
+            resolve();
+        }, 18_000).unref()),
+    ]);
 }
 function formatLocalDate(locale = 'uk-UA') {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
