@@ -1,0 +1,14 @@
+services:
+  ukrnet_loader:
+    image: ukrnet_loader
+    container_name: ukrnet_loader
+
+    environment:
+      TIMEOUT: "900"
+
+    volumes:
+      - ./output:/app/output:z
+
+    network_mode: host
+
+    restart: unless-stopped

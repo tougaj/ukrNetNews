@@ -27,8 +27,8 @@ docker run \
 # docker run -d \
 # 	--name ukrnet_loader \
 # 	-v $(pwd)/output/:/app/output:z \
+# 	--network=host \
 # 	--restart unless-stopped \
-#   --log-driver none \
 # 	ukrnet_loader
 
 #	-e TIMEOUT=900 \
